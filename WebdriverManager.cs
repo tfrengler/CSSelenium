@@ -1,8 +1,10 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Edge;
+using OpenQA.Selenium;
 
 namespace TFrengler.Selenium
 {
@@ -13,105 +15,75 @@ namespace TFrengler.Selenium
         public string ExecutableName;
     }
 
-    public sealed class BrowserDriverManager : IDisposable
+    public sealed class WebdriverManager : IDisposable
     {
-        private readonly Process[] DriverProcesses;
-        private readonly DriverData[] Drivers;
         private readonly DirectoryInfo FileLocation;
+        private readonly DriverService[] DriverServices;
+        private readonly string[] DriverNames; 
 
-        public BrowserDriverManager(DirectoryInfo fileLocation)
+        public WebdriverManager(DirectoryInfo fileLocation)
         {
-            DriverProcesses = new Process[3];
+            DriverNames = new string[3] { "msedgedriver","geckodriver","chromedriver" };
+            DriverServices = new DriverService[3];
             FileLocation = fileLocation;
-            Drivers = new DriverData[]
-            {
-                new DriverData
-                {
-                    Browser = "Microsoft Edge",
-                    DefaultPort = 9515,
-                    ExecutableName = "msedgedriver"
-                },
-                new DriverData
-                {
-                    Browser = "Mozilla Firefox",
-                    DefaultPort = 4444,
-                    ExecutableName = "geckodriver"
-                },
-                new DriverData
-                {
-                    Browser = "Google Chrome",
-                    DefaultPort = 9515,
-                    ExecutableName = "msedgedriver"
-                }
-            };
 
-            if (!fileLocation.Exists)
-                throw new Exception("Unable to instantiate BrowserDriver. Driver location directory does not exist: " + fileLocation.FullName);
+            if (!FileLocation.Exists)
+                throw new Exception("Unable to instantiate BrowserDriver. Directory with drivers does not exist: " + fileLocation.FullName);
         }
 
-        public bool Start(Browser browser, bool killExisting = false)
+        public Uri Start(Browser browser, ushort port)
         {
-            Process DriverProcess;
-            lock(DriverProcesses.SyncRoot)
-            {
-                DriverProcess = DriverProcesses[(int)browser];
-            }
-
-            if (DriverProcess != null)
-            {
-                if (!killExisting)
-                    return false;
-                else
-                    Kill(browser);
-            }
-
             string DriverName;
-            lock(Drivers.SyncRoot)
+            lock(DriverNames.SyncRoot)
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    DriverName = Drivers[(int)browser].ExecutableName + ".exe";
+                    DriverName = DriverNames[(int)browser] + ".exe";
                 else
-                    DriverName = Drivers[(int)browser].ExecutableName;
+                    DriverName = DriverNames[(int)browser];
             }
 
             string PathToDriver = FileLocation.FullName + "/" + DriverName;
             if (File.Exists(PathToDriver))
                 throw new Exception($"Cannot start browser driver: executable does not exist ({PathToDriver})");
 
-            DriverProcess = Process.Start(PathToDriver);
-            lock(DriverProcesses.SyncRoot)
+            DriverService Service = browser switch
             {
-                DriverProcesses[(int)browser] = DriverProcess;
-            }
+                Browser.CHROME => ChromeDriverService.CreateDefaultService(PathToDriver),
+                Browser.FIREFOX => FirefoxDriverService.CreateDefaultService(PathToDriver),
+                Browser.EDGE => EdgeDriverService.CreateDefaultService(PathToDriver),
+                _ => throw new NotImplementedException()
+            };
 
-            return true;
+            if (port > 0) Service.Port = port;
+            Service.Start();
+
+            return Service.ServiceUrl;
         }
 
-        public bool Kill(Browser browser)
+        public bool IsRunning(Browser browser)
         {
-            Process DriverProcess;
-            lock(DriverProcesses.SyncRoot)
+            lock(DriverServices.SyncRoot)
             {
-                DriverProcess = DriverProcesses[(int)browser];
+                DriverService Service = DriverServices[(int)browser];
+                if (Service == null) return false;
+                return Service.IsRunning;
             }
+        }
 
-            if (DriverProcess == null)
-                return false;
-
-            DriverProcess.Kill(true);
-            DriverProcess.WaitForExit();
-
-            return true;
+        public void Stop(Browser browser)
+        {
+            lock(DriverServices.SyncRoot)
+            {
+                DriverService Service = DriverServices[(int)browser];
+                if (Service != null) Service.Dispose();
+            }
         }
 
         public void Dispose()
         {
-            var test = ChromeDriverService.CreateDefaultService("");
-            test.Port = 3333;
-            test.Start();
-
-            foreach(int Browser in Enum.GetValues(typeof(Browser)))
-                Kill((Browser)Browser);
+            Stop(Browser.EDGE);
+            Stop(Browser.FIREFOX);
+            Stop(Browser.CHROME);
         }
     }
 }

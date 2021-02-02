@@ -18,37 +18,37 @@ namespace TFrengler.Selenium
     {
         public Browser Browser {get; private set;}
         public RemoteWebDriver Webdriver {get; private set;}
-        public object Tools {get; private set;}
+        
+        //public object Tools {get; private set;}
+        public ElementLocator GetElements {get; private set;}
 
         #region CONSTRUCTORS
 
-        SeleniumWrapper(Browser browser, Uri remoteURL)
+        public SeleniumWrapper(Browser browser, Uri remoteURL)
         {
-            Init(browser, remoteURL, null, null);
+            Create(browser, remoteURL);
         }
-        SeleniumWrapper(Browser browser, Uri remoteURL, string[] browserArguments)
+
+        public SeleniumWrapper(Browser browser, Uri remoteURL, string[] browserArguments)
         {
-            Init(browser, remoteURL, browserArguments, null);
+            Create(browser, remoteURL, browserArguments);
         }
-        SeleniumWrapper(Browser browser, Uri remoteURL, DriverOptions options)
+
+        public SeleniumWrapper(Browser browser, Uri remoteURL, DriverOptions options)
         {
-            Init(browser, remoteURL, null, options);
+            Create(browser, remoteURL, null, options);
         }
 
         #endregion
 
-        private SeleniumWrapper Init(Browser browser, Uri remoteURL = null, string[] browserArguments = null, DriverOptions options = null)
+        private SeleniumWrapper Create(Browser browser, Uri remoteURL, string[] browserArguments = null, DriverOptions options = null)
         {
             var Options = options ?? CreateDriverOptions(browser, browserArguments);
             Webdriver = new RemoteWebDriver(remoteURL, Options);
-
-            if (remoteURL == null)
-                remoteURL = new Uri("");
+            GetElements = new ElementLocator(Webdriver);
 
             if (!remoteURL.IsLoopback)
                 Webdriver.FileDetector = new LocalFileDetector();
-
-            Webdriver.Manage().Timeouts().PageLoad = new TimeSpan(0, 0, 120);
 
             return this;
         }
