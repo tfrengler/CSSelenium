@@ -16,54 +16,63 @@ namespace TFrengler.Selenium
             return new ElementLocator(context);
         }
 
-        private IWebElement GetByAttributeAndOperator(string attribute, string value, char searchOperator, string elementType = null)
+        public ElementLocator Within(By locatorContext)
         {
-            return Context.FindElement(By.CssSelector($"{elementType ?? ""}[{attribute}{searchOperator}='{value}']"));
+            IWebElement ContextElement = Context.FindElement(locatorContext);
+            return new ElementLocator(ContextElement);
         }
 
+        public IWebElement ByTagName(string elementType)
+        {
+            return Context.FindElement(By.TagName(elementType));
+        }
         public IWebElement ByTitle(string title, string elementType = null)
         {
-            return GetByAttributeAndOperator("title", title, '=', elementType);
+            return Context.FindElement(LocatorFactory.ByTitle(title, elementType));
         }
         public IWebElement ById(string id, string elementType = null)
         {
-            return GetByAttributeAndOperator("id", id, '=', elementType);
+            return Context.FindElement(LocatorFactory.ById(id, elementType));
         }
         public IWebElement ByClass(string className, string elementType = null)
         {
-            return GetByAttributeAndOperator("className", className, '=', elementType);
+            return Context.FindElement(LocatorFactory.ByClass(className, elementType));
         }
         public IWebElement ByName(string name, string elementType = null)
         {
-            return GetByAttributeAndOperator("name", name, '=', elementType);
+            return Context.FindElement(LocatorFactory.ByName(name, elementType));
         }
         public IWebElement ByTextEquals(string text, string elementType = null)
         {
-            return Context.FindElement(By.XPath($"//{elementType ?? "*"}[(normalize-space(text())=\"{text}\"]"));
+            return Context.FindElement(LocatorFactory.ByTextEquals(text, elementType));
         }
         public IWebElement ByTextContains(string text, string elementType = null)
         {
-            return Context.FindElement(By.XPath($"//{elementType ?? "*"}[contains(normalize-space(.),\"{text}\")]"));
+            return Context.FindElement(LocatorFactory.ByTextContains(text, elementType));
         }
         public IWebElement ByInputType(string type, string elementType = null)
         {
-            return GetByAttributeAndOperator("type", type, '=', elementType);
+            return Context.FindElement(LocatorFactory.ByInputType(type, elementType));
         }
         public IWebElement ByValue(string value, string elementType = null)
         {
-            return GetByAttributeAndOperator("value", value, '=', elementType);
+            return Context.FindElement(LocatorFactory.ByValue(value, elementType));
+        }
+        public IWebElement ByAttributeEquals(string attribute, string value, string elementType = null)
+        {
+            return Context.FindElement(LocatorFactory.ByAttributeEquals(attribute, value, elementType));
         }
         public IWebElement ByAttributeStartsWith(string attribute, string value, string elementType = null)
         {
-            return GetByAttributeAndOperator("value", value, '^', elementType);
+            return Context.FindElement(LocatorFactory.ByAttributeStartsWith(attribute, value, elementType));
         }
         public IWebElement ByAttributeEndsWith(string attribute, string value, string elementType = null)
         {
-            return GetByAttributeAndOperator("value", value, '$', elementType);
+            return Context.FindElement(LocatorFactory.ByAttributeEndsWith(attribute, value, elementType));
         }
         public IWebElement ByAttributeContains(string attribute, string value, string elementType = null)
         {
-            return GetByAttributeAndOperator("value", value, '*', elementType);
+            return Context.FindElement(LocatorFactory.ByAttributeContains(attribute, value, elementType));
         }
     }
 }

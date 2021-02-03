@@ -11,16 +11,17 @@ namespace TFrengler.Selenium
     {
         EDGE    = 0,
         FIREFOX = 1,
-        CHROME  = 2
+        CHROME  = 2,
+        IE      = 3
     }
 
     public sealed class SeleniumWrapper : IDisposable
     {
         public Browser Browser {get; private set;}
         public RemoteWebDriver Webdriver {get; private set;}
-        
-        //public object Tools {get; private set;}
-        public ElementLocator GetElements {get; private set;}
+        public SeleniumTools Tools {get; private set;}
+        public ElementLocator GetElement {get; private set;}
+        public ElementsLocator GetElements {get; private set;}
 
         #region CONSTRUCTORS
 
@@ -45,7 +46,10 @@ namespace TFrengler.Selenium
         {
             var Options = options ?? CreateDriverOptions(browser, browserArguments);
             Webdriver = new RemoteWebDriver(remoteURL, Options);
-            GetElements = new ElementLocator(Webdriver);
+
+            GetElement = new ElementLocator(Webdriver);
+            GetElements = new ElementsLocator(Webdriver);
+            Tools = new SeleniumTools(Webdriver);
 
             if (!remoteURL.IsLoopback)
                 Webdriver.FileDetector = new LocalFileDetector();
