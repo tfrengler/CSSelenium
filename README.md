@@ -263,25 +263,16 @@ Argument **elementType** is for all methods (with the exception of **ByTagName()
 
 ```c#
 public ElementLocator Within(IWebElement context);
-public ElementLocator Within(By locatorContext);
 ```
-Thse are is a bit special. They returns a new instance **ElementLocator** that is configured to only search for elements within (descendants of) the element you pass to it. The second variant which uses locators will try and find the element for you first (obviously) before returning, and will throw an exception if the element cannot be found.
-
+This is a bit special. They returns a new instance **ElementLocator** that is configured to only search for elements within (descendants of) the element you pass to it.
 Here's an example that might make its use clearer:
 
 ```c#
-    // FIRST EXAMPLE: Using an existing element
+    // Get an element first
     IWebElement BulletList = SeleniumWrapper.GetElement.ById("MyFancyList", "ul");
-    // Now I want to constrain my search to within this element (for whatever reason...)
+    
+    // Now I want to constrain my search to within this element
     ReadOnlyCollection<IWebElement> ListElements = SeleniumWrapper.GetElements.Within(BulletList).ByTagName("li");
-
-    // SECOND EXAMPLE: Using a locator, constructing it yourself using Selenium's By-class
-    By BulletListLocator = By.CssSelector("ul[id='MyFancyList']"));
-    ReadOnlyCollection<IWebElement> ListElements = SeleniumWrapper.GetElements.Within(BulletListLocator).ByTagName("li");
-
-    // THIRD EXAMPLE: Using a locator, using the locator factory
-    By BulletListLocator = LocatorFactory.ById("MyFancyList", "ul");
-    ReadOnlyCollection<IWebElement> ListElements = SeleniumWrapper.GetElements.Within(BulletListLocator).ByTagName("li");
 ```
 
 Not all webpages are well made in terms of their markup (some are even actively hostile to automation testers...). You may come across scenarios where elements are not easily identifiable when searching globally, and sometimes limiting the search to within some element/container/wrapper can help you out.
