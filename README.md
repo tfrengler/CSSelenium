@@ -62,7 +62,7 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
 ## Technical overview (classes, public methods, properties etc)
 
 ### Namespaces
-1: **TFrengler.Selenium**
+- **TFrengler.Selenium**
 
 ### Global data
 
