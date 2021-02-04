@@ -16,8 +16,8 @@ namespace TFrengler.Selenium
 
         public WebdriverManager(DirectoryInfo fileLocation)
         {
-            DriverNames = new string[3] { "msedgedriver","geckodriver","chromedriver" };
-            DriverServices = new DriverService[3];
+            DriverNames = new string[4] { "msedgedriver","geckodriver","chromedriver","IEDriverServer" };
+            DriverServices = new DriverService[4];
             FileLocation = fileLocation;
 
             if (!FileLocation.Exists)
@@ -26,10 +26,15 @@ namespace TFrengler.Selenium
 
         public Uri Start(Browser browser, bool killExisting = false, ushort port = 0)
         {
+            bool RunningOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+            if (!RunningOnWindows && (browser == Browser.IE || browser == Browser.EDGE))
+                throw new Exception($"You are attempting to run {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
+
             string DriverName;
             lock(DriverNames.SyncRoot)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (RunningOnWindows)
                     DriverName = DriverNames[(int)browser] + ".exe";
                 else
                     DriverName = DriverNames[(int)browser];

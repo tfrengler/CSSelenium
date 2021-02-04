@@ -79,7 +79,7 @@ namespace TFrengler.Selenium
                     return FirefoxOptions;
 
                 case Browser.EDGE:
-                    // TODO(thomas): Edge has no options for adding arguments atm
+                    // Edge has no options for adding arguments atm
                     var EdgeOptions = new EdgeOptions();
                     EdgeOptions.PageLoadStrategy = PageLoadStrategy.Normal;
 

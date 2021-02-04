@@ -22,7 +22,7 @@ namespace TFrengler.Selenium
         {
             ICookieJar ExistingCookies = WebDriver.Manage().Cookies;
 
-            HttpWebRequest AttachmentDownloadRequest = (HttpWebRequest)WebRequest.Create(FileURL);
+            HttpWebRequest AttachmentDownloadRequest = (HttpWebRequest)WebRequest.Create(fileURL);
             AttachmentDownloadRequest.Method = "GET";
             AttachmentDownloadRequest.Accept = "*/*"; // image/bmp,image/jpeg,image/png,image/webp
             AttachmentDownloadRequest.AllowAutoRedirect = false;
@@ -31,7 +31,7 @@ namespace TFrengler.Selenium
 
             // We need to imitate all the cookies from the application otherwise our request will be refused
             foreach (var CurrentCookie in ExistingCookies.AllCookies)
-                AttachmentDownloadRequest.CookieContainer.Add(new System.Net.Cookie(CurrentCookie.Name, CurrentCookie.Value) { Domain = FileURL.Host });
+                AttachmentDownloadRequest.CookieContainer.Add(new System.Net.Cookie(CurrentCookie.Name, CurrentCookie.Value) { Domain = fileURL.Host });
 
             HttpWebResponse AttachmentDownloadResponse = (HttpWebResponse)AttachmentDownloadRequest.GetResponse();
             if (AttachmentDownloadResponse.StatusCode != HttpStatusCode.OK)
