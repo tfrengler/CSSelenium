@@ -40,7 +40,7 @@ There are two principal classes to work with: **SeleniumWrapper** and **Webdrive
     Selenium.Webdriver.Navigate().GoToUrl("https://www.google.com");
 
     // Using the built in tools to get elements
-    IWebElement SearchBar = Selenium.Webdriver.GetElement.ByTitle("search", "input");
+    IWebElement SearchBar = Selenium.GetElement.ByTitle("search", "input");
     SearchBar.SendKeys("Selenium website");
     Selenium.GetElement.ByTitle("Google search", "input").Click();
 
@@ -119,7 +119,7 @@ _NOTE:_ I have tried to make this as threadsafe as possible, but I haven't thoro
 
 **CONSTRUCTORS:**
 ```c#
-    public WebdriverManager(DirectoryInfo fileLocation)
+public WebdriverManager(DirectoryInfo fileLocation)
 ```
 Argument **fileLocation** should point to the directory where the webdrivers are located.
 _NOTE:_ Don't rename the executables! This library, as well as the internal **DriverService**-class it wraps, expects the original file names (chromedriver, geckodriver etc)
