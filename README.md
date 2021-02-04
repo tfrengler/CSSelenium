@@ -170,7 +170,7 @@ These tools come in four flavours:
 1. **Element-fetcing**: implemented by **ElementLocator** and **ElementsLocator** - and exposed via **SeleniumWrapper.GetElement** and **SeleniumWrapper.GetElements** respectively - are classes that simplify fetching HTML-elements without having to create selectors yourself. The former fetches single elements, while the latter - unsurprisingly - fetches multiple.
 1. **Utility-methods**: implemented by **SeleniumTools** - and exposed via **SeleniumWrapper.Tools** - this is the most opinionated part of this library. It offers a range of methods that could possibly help you out. These are based on frequent challenges I have come up against in my automation career.
 1. **Locator-creation**: implemented by the static class **LocatorFactory** it can generate element locators (The **By**-class from Selenium) which are used across a range of different methods in Selenium. ElementLocator and ElementsLocator both make use of this to generate the locators used to fetch elements.
-1.**Element-relationships**: implemented as extension methods by **WebElementExtensions**, these methods aim to help with getting elements that are related to an element. These include getting the child elements, parent element, next and previous sibling.
+1. **Element-relationships**: implemented as extension methods by **WebElementExtensions**, these methods aim to help with getting elements that are related to an element. These include getting the child elements, parent element, next and previous sibling.
 
 Do note that these tools are not meant to offer high performance or display best practices. They are here to **help** with and **simplify** certain actions that you frequently do with Selenium.
 
