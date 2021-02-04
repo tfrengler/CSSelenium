@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>CSSelenium</AssemblyName>
-    <VersionPrefix>0.9.0</VersionPrefix>
-    <VersionSuffix>beta</VersionSuffix>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
     <Authors>Thomas Frengler</Authors>
+    <Copyright>Thomas Frengler @ 2021</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <AssemblyTitle>CSSelenium</AssemblyTitle>
     <Description>Simple C# Selenium wrapper, for getting up and running with a minimum of fuss</Description>
@@ -27,5 +28,6 @@
   <ItemGroup>
     <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
     <PackageReference Include="Selenium.Support" Version="3.141.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
   </ItemGroup>
 </Project>

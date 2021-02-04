@@ -12,9 +12,9 @@ namespace TFrengler.Selenium
             Context = context;
         }
 
-        public ElementLocator Within(IWebElement context)
+        public ElementsLocator Within(IWebElement context)
         {
-            return new ElementLocator(context);
+            return new ElementsLocator(context);
         }
 
         public ReadOnlyCollection<IWebElement> ByTagName(string elementType)

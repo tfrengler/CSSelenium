@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Edge;
@@ -74,7 +75,11 @@ namespace TFrengler.Selenium
                     var FirefoxOptions = new FirefoxOptions();
                     if (browserArguments != null)
                         FirefoxOptions.AddArguments(browserArguments);
-                    FirefoxOptions.Profile = new FirefoxProfile();
+
+                    // Workaround for issue in Selenium 3.141 (https://github.com/SeleniumHQ/selenium/issues/4816)
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                    FirefoxOptions.Proxy.Kind = ProxyKind.Direct;
+                    FirefoxOptions.Profile = new FirefoxProfile() {DeleteAfterUse = true};
 
                     return FirefoxOptions;
 
