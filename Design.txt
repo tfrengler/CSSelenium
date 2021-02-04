@@ -1,9 +1,17 @@
+enum TestState
+{
+    NOT_STARTED,
+    IN_PROGRESS,
+    OK,
+    NOK
+}
+
 abstract TestCase
 - public const ID
 - public const string Description
 - Exception LastException {get; private set;}
 - OpenQA.Selenium.Screenshot LastVisualState {get; private set;}
-- enum State (NOT_STARTED, IN_PROGRESS, OK, NOK) {get; private set;}
+- enum State
 - Started {get; private set;}
 - Finished {get; private set;}
 - public TimeTaken()
@@ -13,20 +21,9 @@ abstract TestCase
 - abstract bool Run()
 - abstract bool Teardown()
 - Constructor(SeleniumWrapper selenium, object pageObject, ILogger logger, TestData testdata)
-- Test cases should define and manage their own unique test data
 
-TestData
-- Interface for test cases to get test data without needing knowledge of the rest of the system
-
-TestSuite
+sealed TestSuite
 - List<TestCase> TestCases
-- Browser
-- Server
-- StopAfterFailure (numeric - the amount of failures after which to stop execution)
-- Started
-- Finished
-- TimeTaken()
-- Run()
 - BeforeEach()
 - AfterEach()
 - BeforeAll()
@@ -35,15 +32,23 @@ TestSuite
 - GetSuccessfulTestCases()
 - Constructor(SeleniumWrapper selenium ILogger logger, List<TestCases> testCases, Browser browser, Server server)
 
-ElementLocator
-- title
-- id
-- class
-- name
-- textEquals
-- textContains
-- inputType
-- value
-- attributeStartsWith
-- attributeEndsWith
-- attributeContains
+sealed TestBatch
+- List<TestCase> TestCases
+- List<TestSuite> TestSuites
+- Browser
+- Server
+- StopAfterFailure (the amount of failures after which to stop execution)
+- Started
+- Finished
+- TimeTaken()
+- Start()
+- Stop()
+- BeforeEach()
+- AfterEach()
+- BeforeAll()
+- AfterAll()
+- Constructor(SeleniumWrapper selenium ILogger logger, List<TestCases> testCases, Browser browser, Server server)
+- Constructor(SeleniumWrapper selenium ILogger logger, List<TestSuite> testSuites, Browser browser, Server server)
+
+TestData
+- Interface for test cases to get test data without needing knowledge of the rest of the system

@@ -16,7 +16,7 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 - Abstracts away getting an instance of RemoteWebDriver, which is the primary interface for interacting with the browser.
 - Abstracts away the finer details of starting and stopping the webdriver executables for a given browser.
 - Aside from hiding the details of the instantiation, you get full access to the Selenium-object (RemoteWebDriver-class). This library really is just a thin wrapper around the core webdriver.
-- Offers a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios.
+- Offers a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who are super technical for whatever reason. Some of them may be useful to experienced people as well.
 - Supports both local and remote webdriver usage. Both of these "modes" are achieved purely via RemoteWebDriver. I specially chose not to use the local browser-driver classes to keep things simple. More on what this means later for those who don't know.
 - Offers support for Chrome, Firefox, Edge and IE. Anything else and you'll have to write your own implementation, sorry.
 
@@ -38,6 +38,12 @@ There are two principal classes to work with: **SeleniumWrapper** and **Webdrive
     var Selenium = new SeleniumWrapper(Browser.CHROME, WebdriverURL);
 
     Selenium.Webdriver.Navigate().GoToUrl("https://www.google.com");
+
+    // Using the built in tools to get elements
+    IWebElement SearchBar = Selenium.Webdriver.GetElement.ByTitle("search", "input");
+    SearchBar.SendKeys("Selenium website");
+    Selenium.GetElement.ByTitle("Google search", "input").Click();
+
     // Don't forget to clean up after yourself! Especially the manager, otherwise you will have orphaned webdriver-processes hanging around.
     Selenium.Webdriver.Quit();
     Manager.Stop(Browser.CHROME);
@@ -47,8 +53,10 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
 
 ## Technical overview (classes, public methods, properties etc)
 
-**Namespaces:**<br/>
-- TFrengler.Selenium
+### Namespaces
+1: **TFrengler.Selenium**
+
+### Global data
 
 **Browser:** _enum_
 ```c#
@@ -82,7 +90,6 @@ _NOTE:_ Don't forget to add command-line qualifiers in front of the switches (su
 The last one is the most customizable. In case you really need more more control you can create your own instance of your respective browser's sub-class of DriverOptions. This will allow you to add a proxy server, deal with browser extensions, configure logging etc. Keep in mind that each browser's DriverOptions-subclass has different options. Edge for example doesn't allow you to pass command-line options (at least not as of the time I am writing this, with Selenium at version 3.141). I suspect this option is mostly for people who are well versed in Selenium and therefore less likely to be using my library anyway. But in any case, it's there as an option.
 
 **PROPERTIES:**
-
 ```c#
 public Browser Browser {get; private set;}
 public RemoteWebDriver Webdriver {get; private set;}
@@ -149,10 +156,11 @@ This will attempt to kill all running webdrivers
 
 Since this library is also aimed at beginners (or experienced people who like a helping hand) I have included a few optional tools. These are pretty lightweight so even if you don't need them there's very little overhead.
 
-These tools come in three flavours:
+These tools come in four flavours:
 1: **Element-fetcing**: implemented by **ElementLocator** and **ElementsLocator** - and exposed via **SeleniumWrapper.GetElement** and **SeleniumWrapper.GetElements** respectively - are classes that simplify fetching HTML-elements without having to create selectors yourself. The former fetches single elements, while the latter - unsurprisingly - fetches multiple.
 1: **Utility-methods**: implemented by **SeleniumTools** - and exposed via **SeleniumWrapper.Tools** - this is the most opinionated part of this library. It offers a range of methods that could possibly help you out. These are based on frequent challenges I have come up against in my automation career.
 1: **Locator-creation**: implemented by the static class **LocatorFactory** it can generate element locators (The **By**-class from Selenium) which are used across a range of different methods in Selenium. ElementLocator and ElementsLocator both make use of this to generate the locators used to fetch elements.
+1: **Element-relationships**: implemented as extension methods by **WebElementExtensions**, these methods aim to help with getting elements that are related to an element. These include getting the child elements, parent element, next and previous sibling.
 
 Do note that these tools are not meant to offer high performance or display best practices. They are here to **help** with and **simplify** certain actions that you frequently do with Selenium.
 
@@ -172,36 +180,52 @@ Since this is dependency injected into SeleniumWrapper you are discouraged from 
 **METHODS:**
 
 ```c#
-public string DownloadFile(Uri FileURL, FileStream output)
+public string DownloadFile(Uri fileURL, FileStream output)
 ```
+
+This one should be fairly self-explanatory. It attempts to download a file into the stream provided. If the link does not return 200 OK an exception will be thrown. The same if the response stream cannot be read. It makes no judgement about what is returned from the URL and will blindly copy the response to the file.
+
+Downloading files programmatically is already tricky business, and this is simply my attempt at making a somewhat generic approach. It does this by doing an HTTP-request to the URL, emulating whatever cookies are available on the current page. In a lot of cases that might be enough, but there are plenty of places it won't work. Be warned.
 
 ```c#
 public void ScrollToElement(IWebElement element)
 ```
 
+Attempts to scroll to the element, which may not always succeed (scrolling to elements is finicky). It does so using Selenium's **Action**-class.
+
 ```c#
 public void ClickElementUsingJS(IWebElement element)
 ```
+
+Clicking on an element, but using Javascript to invoke the element's click-event as opposed to simulate clicking on it with your mouse. There are situations where this can be useful.
 
 ```c#
 public void DropdownSelect(By dropdownSelector, string option, ISearchContext context = null, TimeSpan? timeout = null)
 ```
 
+Dynamically loaded dropdowns can be a pain to deal with. This attempts to take a more robust (if not exactly elegant) approach. It will ignore all exceptions within the timeout while trying to fetch the dropdown, selecting the option and verifying that the selected option is the one you chose.
+
+You have to pass it the locator of the dropdown, and optionally the context to search within (ie. another element) if that can't be achieved via the locator itself. Defaults to trying for 10 seconds.
+
 ```c#
 public bool StandardWait(Func<IWebDriver, bool> waitFunction, TimeSpan? timeout = null)
 ```
 
-```c#
-public void ClearCookies()
-```
+Perhaps for more experienced users, this is a timeout-method which wraps Selenium's **WebDriverWait** and is "usually" good enough for most situations. Ignores most common exceptions related to elements not being found, disabled, non-interactable etc. Returns a boolean allowing you to decide how to react to the eventual success or failure.
+
+You are only required to supply the wait condition yourself, which is a lambda-function that should **true** on success, and **false** on failure. Defaults to 10 seconds.
 
 ```c#
 public void ClickElementRepeatedly(By element, TimeSpan? timeout = null)
 ```
 
+A somewhat dumb, brute force helper method that keeps trying to click an element until no exceptions are thrown. Defaults to 10 seconds.
+
 ```c#
 public void ClickElementUntil(By element, Func<IWebDriver, bool> waitCondition, TimeSpan? timeout = null)
 ```
+
+Similar to above, except this one keeps trying until a certain condition (which you supply via a lambda-function) is met. Defaults to 10 seconds.
 
 ---
 
@@ -288,7 +312,7 @@ Here's an example that might make its use clearer:
 
 Not all webpages are well made in terms of their markup (some are even actively hostile to automation testers...). You may come across scenarios where elements are not easily identifiable when searching globally, and sometimes limiting the search to within some element/container/wrapper can help you out.
 
-Yes, this incurs the overhead of an extra call to Selenium via FindElement(s) and is definitely less performant than constructing an Xpath- or CSSSelector-locator that can do this in one go. Remember these methods are about easy of use, not best practices or performance.
+_NOTE:_ Yes, I am aware this incurs the overhead of an extra call to Selenium via **FindElement(s)** and is definitely less performant than constructing an Xpath- or CSSSelector-locators that can do this in one go. Remember these methods are about easy of use, not performance.
 
 ---
 
@@ -296,3 +320,35 @@ Yes, this incurs the overhead of an extra call to Selenium via FindElement(s) an
 
 This is a mirror image of **ElementLocator**, with exactly the same methods. They simply return multiple elements in the form of an **ReadOnlyCollection<IWebElement>** instance, instead of a single **IWebElement** instance.<br/>
 _NOTE:_ This can also be used to check for elements. Since attempting to fetch a single element throws an exception if it can't be found, an alternative to using try/catch is to try fetching multiple. Then you simply check if the **Count**-property of the returned ReadOnlyCollection is greater than 0.
+
+### public static class _WebElementExtensions_
+
+Extensions to **IWebElement** designed to help getting elements that are related to the current element. These are all implemented using Xpath axis'.
+
+```c#
+public static ReadOnlyCollection<IWebElement> GetDirectChildren(this IWebElement element);
+public static ReadOnlyCollection<IWebElement> GetDescendants(this IWebElement element);
+public static IWebElement GetParent(this IWebElement element);
+public static IWebElement GetPreviousSiblingElement(this IWebElement element);
+public static IWebElement GetNextSiblingElement(this IWebElement element);
+```
+
+All of these should be pretty self-explanatory. Some of you may wonder what the difference is between **children** and **descendants**. To keep it short: children are elements that are _directly_ nested within another element. Descendants are ALL elements nested within an element, even if they are nested within other sub-elements.
+
+By way of example:
+```html
+    <section>
+        <div>First</div>
+        <div>
+            <p>Second</p>
+        </div>
+        <div>
+            <p>
+                Third
+                <span>Fourth</span>
+            </p>
+        <div>
+    </section>
+```
+
+If you call **GetDirectChildren()** on **´<section>´** you'll only get the **divs**. If you call **GetDescendants()** you'll get both the **divs**, **p's** and the **span**.

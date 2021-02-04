@@ -18,9 +18,8 @@ namespace TFrengler.Selenium
             WebDriver = webdriver;
         }
 
-        public string DownloadFile(Uri FileURL, FileStream output)
+        public void DownloadFile(Uri fileURL, FileStream output)
         {
-            string FileName = Guid.NewGuid().ToString();
             ICookieJar ExistingCookies = WebDriver.Manage().Cookies;
 
             HttpWebRequest AttachmentDownloadRequest = (HttpWebRequest)WebRequest.Create(FileURL);
@@ -48,8 +47,6 @@ namespace TFrengler.Selenium
             output.Flush();
             output.Dispose();
             AttachmentDownloadResponse.Dispose();
-
-            return FileName;
         }
 
         public void ScrollToElement(IWebElement element)
@@ -116,11 +113,6 @@ namespace TFrengler.Selenium
             {
                 return false;
             }
-        }
-
-        public void ClearCookies()
-        {
-            WebDriver.Manage().Cookies.DeleteAllCookies();
         }
 
         /// <summary>

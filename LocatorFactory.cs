@@ -31,12 +31,12 @@ namespace TFrengler.Selenium
 
         public static By ByTextEquals(string text, string elementType = null, string axis = null)
         {
-            return By.XPath($"{axis ?? "./"}{elementType ?? "*"}[(normalize-space(text())=\"{text}\"]");
+            return By.XPath($"{axis ?? ".//"}{elementType ?? "*"}[(normalize-space(text())=\"{text}\"]");
         }
 
         public static By ByTextContains(string text, string elementType = null, string axis = null)
         {
-            return By.XPath($"{axis ?? "./"}{elementType ?? "*"}[contains(normalize-space(.),\"{text}\")]");
+            return By.XPath($"{axis ?? ".//"}{elementType ?? "*"}[contains(normalize-space(.),\"{text}\")]");
         }
 
         public static By ByInputType(string type, string elementType = null)

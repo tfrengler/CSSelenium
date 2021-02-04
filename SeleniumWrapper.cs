@@ -3,6 +3,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.IE;
 using OpenQA.Selenium.Remote;
 
 namespace TFrengler.Selenium
@@ -83,6 +84,16 @@ namespace TFrengler.Selenium
                     EdgeOptions.PageLoadStrategy = PageLoadStrategy.Normal;
 
                     return EdgeOptions;
+
+                case Browser.IE:
+                    var IEOptions = new InternetExplorerOptions();
+                    if (browserArguments != null)
+                    {
+                        IEOptions.ForceCreateProcessApi = true;
+                        IEOptions.BrowserCommandLineArguments = string.Join(" ", browserArguments);
+                    }
+
+                    return IEOptions;
 
                 default:
                     throw new NotImplementedException();
