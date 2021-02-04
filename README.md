@@ -244,52 +244,26 @@ Since this is dependency injected into SeleniumWrapper you are discouraged from 
 
 **METHODS:**
 ```c#
-public IWebElement ByTagName(string elementType)
-```
-```c#
-public IWebElement ByTitle(string title, string elementType = null)
-```
-```c#
-public IWebElement ById(string id, string elementType = null)
-```
-```c#
-public IWebElement ByClass(string className, string elementType = null)
-```
-```c#
-public IWebElement ByName(string name, string elementType = null)
-```
-```c#
-public IWebElement ByTextEquals(string text, string elementType = null)
-```
-```c#
-public IWebElement ByTextContains(string text, string elementType = null)
-```
-```c#
-public IWebElement ByInputType(string type, string elementType = null)
-```
-```c#
-public IWebElement ByValue(string value, string elementType = null)
-```
-```c#
-public IWebElement ByAttributeEquals(string attribute, string value, string elementType = null)
-```
-```c#
-public IWebElement ByAttributeStartsWith(string attribute, string value, string elementType = null)
-```
-```c#
-public IWebElement ByAttributeEndsWith(string attribute, string value, string elementType = null)
-```
-```c#
-public IWebElement ByAttributeContains(string attribute, string value, string elementType = null)
+public IWebElement ByTagName(string elementType);
+public IWebElement ByTitle(string title, string elementType = null);
+public IWebElement ById(string id, string elementType = null);
+public IWebElement ByClass(string className, string elementType = null);
+public IWebElement ByName(string name, string elementType = null);
+public IWebElement ByTextEquals(string text, string elementType = null);
+public IWebElement ByTextContains(string text, string elementType = null);
+public IWebElement ByInputType(string type, string elementType = null);
+public IWebElement ByValue(string value, string elementType = null);
+public IWebElement ByAttributeEquals(string attribute, string value, string elementType = null);
+public IWebElement ByAttributeStartsWith(string attribute, string value, string elementType = null);
+public IWebElement ByAttributeEndsWith(string attribute, string value, string elementType = null);
+public IWebElement ByAttributeContains(string attribute, string value, string elementType = null);
 ```
 All of the above methods do the same thing: find and return an HTML-element. The only difference is which attribute/element-type they target in their search.
 Argument **elementType** is for all methods (with the exception of **ByTagName()**) optional. This allows you to restrict the search for elements to a specific tag, ie. "input", "div" etc.
 
 ```c#
-public ElementLocator Within(IWebElement context)
-```
-```c#
-public ElementLocator Within(By locatorContext)
+public ElementLocator Within(IWebElement context);
+public ElementLocator Within(By locatorContext);
 ```
 Thse are is a bit special. They returns a new instance **ElementLocator** that is configured to only search for elements within (descendants of) the element you pass to it. The second variant which uses locators will try and find the element for you first (obviously) before returning, and will throw an exception if the element cannot be found.
 
@@ -351,4 +325,4 @@ By way of example:
     </section>
 ```
 
-If you call **GetDirectChildren()** on **´<section>´** you'll only get the **divs**. If you call **GetDescendants()** you'll get both the **divs**, **p's** and the **span**.
+If you call **GetDirectChildren()** on **section** you'll only get the **divs**. If you call **GetDescendants()** you'll get both the **divs**, **p's** and the **span**.
