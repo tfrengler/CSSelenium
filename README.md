@@ -24,6 +24,14 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 - This code was written by me, primarily for use by me, and thus it adheres very much to my principles of software architecture. Basically: if you don't like the way it works or how I wrote this then I would thank you kindly to simply walk away rather than offer negativity. Constructive feedback is always welcome of course.
 - This library is provided "as is". I have no roadmap for future features, and bugs will only be fixed when and if I feel like it. I don't say this to be mean, but my life is simply too busy to consistently maintain this. I hope you understand.
 
+## Compatibility/requirements
+
+1. Selenium **v3.141** (https://selenium-release.storage.googleapis.com/index.html?path=3.141/)
+1. Written in **.NET Core 3.1**
+
+Might work for earlier versions, and possibly .NET 5.0. However the Firefox driver has a [bug related to codepages](https://github.com/SeleniumHQ/selenium/issues/4816), and requires a very specific version of **System.Text.Encoding.CodePages** that I am not sure is supported by other .NET versions. If you aren't automating Firefox this isn't relevant then.
+
+
 ## Getting started
 
 There are two principal classes to work with: **SeleniumWrapper** and **WebdriverManager**. Remember what I said earlier about "local" and "remote" modes? If you are not running the webdriver-executables locally then you don't have to care about **WebdriverManager**. Since I guess that most people's basic usage is running the browser and webdriver on the same machine as the tests that's the example we'll go with:
@@ -67,6 +75,8 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
     IE      = 3
 }
 ```
+
+It's worth noting that Edge is the legacy version (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 does not offer support for the new edge version.
 
 ---
 
@@ -291,8 +301,8 @@ _NOTE:_ This can also be used to check for elements. Since attempting to fetch a
 Extensions to **IWebElement** designed to help getting elements that are related to the current element. These are all implemented using Xpath axis'.
 
 ```c#
-public static ReadOnlyCollection<IWebElement> GetDirectChildren(this IWebElement element);
-public static ReadOnlyCollection<IWebElement> GetDescendants(this IWebElement element);
+public static ReadOnlyCollection<IWebElement> GetDirectChildren(this IWebElement element, string elementType = null);
+public static ReadOnlyCollection<IWebElement> GetDescendants(this IWebElement element, string elementType = null);
 public static IWebElement GetParent(this IWebElement element);
 public static IWebElement GetPreviousSiblingElement(this IWebElement element);
 public static IWebElement GetNextSiblingElement(this IWebElement element);
