@@ -112,6 +112,7 @@ namespace TFrengler.Selenium
             Stop(Browser.EDGE);
             Stop(Browser.FIREFOX);
             Stop(Browser.CHROME);
+            Stop(Browser.IE);
         }
     }
 }

@@ -5,15 +5,17 @@ namespace TFrengler.Selenium
     public sealed class ElementLocator
     {
         private readonly ISearchContext Context;
+        private string XPathAxis;
 
         public ElementLocator(ISearchContext context)
         {
             Context = context;
+            XPathAxis = "//";
         }
 
         public ElementLocator Within(IWebElement context)
         {
-            return new ElementLocator(context);
+            return new ElementLocator(context) {XPathAxis = "./"};
         }
 
         public IWebElement ByTagName(string elementType)
@@ -43,12 +45,12 @@ namespace TFrengler.Selenium
 
         public IWebElement ByTextEquals(string text, string elementType = null)
         {
-            return Context.FindElement(LocatorFactory.ByTextEquals(text, elementType));
+            return Context.FindElement(LocatorFactory.ByTextEquals(text, elementType, XPathAxis));
         }
 
         public IWebElement ByTextContains(string text, string elementType = null)
         {
-            return Context.FindElement(LocatorFactory.ByTextContains(text, elementType));
+            return Context.FindElement(LocatorFactory.ByTextContains(text, elementType, XPathAxis));
         }
 
         public IWebElement ByInputType(string type, string elementType = null)
