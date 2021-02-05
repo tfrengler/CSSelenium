@@ -29,7 +29,15 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 1. Selenium **v3.141** (https://selenium-release.storage.googleapis.com/index.html?path=3.141/)
 1. Written in **.NET Core 3.1**
 
-Might work for earlier versions, and possibly .NET 5.0. However the Firefox driver has a [bug related to codepages](https://github.com/SeleniumHQ/selenium/issues/4816), and requires a very specific version of **System.Text.Encoding.CodePages** that I am not sure is supported by other .NET versions. If you aren't automating Firefox this isn't relevant then.
+Dependencies:
+1. System.Text.Encoding.CodePages.dll (4.700.20.21406)
+1. Newtonsoft.Json.dll (10.0.3.21018)
+1. WebDriver.dll (3.141.0)
+1. Webdriver.Support.dll (3.141.0)
+
+Dependencies are all included in releases. If you build this yourself, well I presume you know what you are doing in that case and how to handle the files. The latter two DLL's are Selenium's so if your project already includes those then you can skip them.
+
+The whole thing _might_ work for earlier versions, and possibly .NET 5.0. However the Firefox driver has a [bug related to codepages](https://github.com/SeleniumHQ/selenium/issues/4816), and requires a very specific version of **System.Text.Encoding.CodePages** that I am not sure is supported by other .NET versions. If you aren't automating Firefox this isn't relevant then.
 
 
 ## Getting started
