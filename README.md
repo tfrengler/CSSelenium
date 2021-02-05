@@ -71,6 +71,7 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
 
 ### Namespaces
 - **TFrengler.Selenium**
+- **TFrengler.Selenium.Extensions**
 
 ### Global data
 
@@ -308,7 +309,8 @@ _NOTE:_ This can also be used to check for elements. Since attempting to fetch a
 
 ### public static class _WebElementExtensions_
 
-Extensions to **IWebElement** designed to help getting elements that are related to the current element. These are all implemented using Xpath axis'.
+Extensions to **IWebElement** designed to help getting elements that are related to the current element. These are all implemented using Xpath.<br/>
+_NOTE:_ To use these you need to use the **TFrengler.Selenium.Extensions** namespace.
 
 ```c#
 public static ReadOnlyCollection<IWebElement> GetDirectChildren(this IWebElement element, string elementType = null);

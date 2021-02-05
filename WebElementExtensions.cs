@@ -2,7 +2,7 @@ using OpenQA.Selenium;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace TFrengler.Selenium
+namespace TFrengler.Selenium.Extensions
 {
     public static class WebElementExtensions
     {
