@@ -28,8 +28,8 @@ namespace TFrengler.Selenium
         {
             bool RunningOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-            if (!RunningOnWindows && (browser == Browser.IE || browser == Browser.EDGE))
-                throw new Exception($"You are attempting to run {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
+            if (!RunningOnWindows && (browser == Browser.IE11 || browser == Browser.EDGE))
+                throw new Exception($"You are attempting to run the {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
 
             string DriverName;
             lock(DriverNames.SyncRoot)
@@ -112,7 +112,7 @@ namespace TFrengler.Selenium
             Stop(Browser.EDGE);
             Stop(Browser.FIREFOX);
             Stop(Browser.CHROME);
-            Stop(Browser.IE);
+            Stop(Browser.IE11);
         }
     }
 }

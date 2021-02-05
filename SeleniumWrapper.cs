@@ -14,7 +14,7 @@ namespace TFrengler.Selenium
         EDGE    = 0,
         FIREFOX = 1,
         CHROME  = 2,
-        IE      = 3
+        IE11    = 3
     }
 
     public sealed class SeleniumWrapper : IDisposable
@@ -64,10 +64,11 @@ namespace TFrengler.Selenium
             switch (browser)
             {
                 case Browser.CHROME:
-
                     var ChromeOptions = new ChromeOptions();
                     if (browserArguments != null)
                         ChromeOptions.AddArguments(browserArguments);
+                    else
+                        ChromeOptions.AddArgument("--no-proxy-server"); // This can be quite a performance boost
 
                     return ChromeOptions;
 
@@ -90,7 +91,7 @@ namespace TFrengler.Selenium
 
                     return EdgeOptions;
 
-                case Browser.IE:
+                case Browser.IE11:
                     var IEOptions = new InternetExplorerOptions();
                     if (browserArguments != null)
                     {

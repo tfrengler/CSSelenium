@@ -30,8 +30,8 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 1. Written in **.NET Core 3.1**
 
 Dependencies:
-1. System.Text.Encoding.CodePages.dll (4.700.20.21406)
-1. Newtonsoft.Json.dll (10.0.3.21018)
+1. System.Text.Encoding.CodePages.dll (4.7.1)
+1. Newtonsoft.Json.dll (10.0.3)
 1. WebDriver.dll (3.141.0)
 1. Webdriver.Support.dll (3.141.0)
 
@@ -80,11 +80,13 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
     EDGE    = 0,
     FIREFOX = 1,
     CHROME  = 2,
-    IE      = 3
+    IE11    = 3
 }
 ```
 
 It's worth noting that Edge is the legacy version (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 does not offer support for the new edge version.
+
+Also worth noting is that IE is quirky and can be hard to get to cooperate. And it requires more work than simply starting the driver and interfacing with it via Selenium: https://github.com/SeleniumHQ/selenium/wiki/InternetExplorerDriver#required-configuration
 
 ---
 
@@ -288,7 +290,7 @@ Here's an example that might make its use clearer:
 ```c#
     // Get an element first
     IWebElement BulletList = SeleniumWrapper.GetElement.ById("MyFancyList", "ul");
-    
+
     // Now I want to constrain my search to within this element
     ReadOnlyCollection<IWebElement> ListElements = SeleniumWrapper.GetElements.Within(BulletList).ByTagName("li");
 ```
