@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
+using OpenQA.Selenium.IE;
 using OpenQA.Selenium;
 
 namespace TFrengler.Selenium
@@ -67,6 +68,7 @@ namespace TFrengler.Selenium
                 Browser.CHROME => ChromeDriverService.CreateDefaultService(FileLocation.FullName),
                 Browser.FIREFOX => FirefoxDriverService.CreateDefaultService(FileLocation.FullName),
                 Browser.EDGE => EdgeDriverService.CreateDefaultService(FileLocation.FullName),
+                Browser.IE11 => InternetExplorerDriverService.CreateDefaultService(FileLocation.FullName),
                 _ => throw new NotImplementedException()
             };
 

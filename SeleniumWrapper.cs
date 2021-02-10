@@ -68,19 +68,28 @@ namespace TFrengler.Selenium
                     if (browserArguments != null)
                         ChromeOptions.AddArguments(browserArguments);
                     else
-                        ChromeOptions.AddArgument("--no-proxy-server"); // This can be quite a performance boost
+                    {
+                        var Proxy = new Proxy();
+                        Proxy.IsAutoDetect = false;
+                        Proxy.Kind = ProxyKind.Direct;
+                        ChromeOptions.Proxy = Proxy;
+                    }
 
                     return ChromeOptions;
 
                 case Browser.FIREFOX:
                     var FirefoxOptions = new FirefoxOptions();
+
                     if (browserArguments != null)
                         FirefoxOptions.AddArguments(browserArguments);
+                    else
+                    {
+                        FirefoxOptions.Proxy.Kind = ProxyKind.Direct;
+                        FirefoxOptions.Profile = new FirefoxProfile() {DeleteAfterUse = true};
+                    }
 
                     // Workaround for issue in Selenium 3.141 (https://github.com/SeleniumHQ/selenium/issues/4816)
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                    FirefoxOptions.Proxy.Kind = ProxyKind.Direct;
-                    FirefoxOptions.Profile = new FirefoxProfile() {DeleteAfterUse = true};
 
                     return FirefoxOptions;
 
@@ -97,6 +106,13 @@ namespace TFrengler.Selenium
                     {
                         IEOptions.ForceCreateProcessApi = true;
                         IEOptions.BrowserCommandLineArguments = string.Join(" ", browserArguments);
+                    }
+                    else
+                    {
+                        var Proxy = new Proxy();
+                        Proxy.IsAutoDetect = false;
+                        Proxy.Kind = ProxyKind.Direct;
+                        IEOptions.Proxy = Proxy;
                     }
 
                     return IEOptions;

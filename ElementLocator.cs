@@ -15,7 +15,7 @@ namespace TFrengler.Selenium
 
         public ElementLocator Within(IWebElement context)
         {
-            return new ElementLocator(context) {XPathAxis = "./"};
+            return new ElementLocator(context) { XPathAxis = ".//" };
         }
 
         public IWebElement ByTagName(string elementType)
