@@ -16,7 +16,7 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 - Abstracts away getting an instance of RemoteWebDriver, which is the primary interface for interacting with the browser.
 - Abstracts away the finer details of starting and stopping the webdriver executables for a given browser.
 - Aside from hiding the details of the instantiation, you get full access to the Selenium-object (RemoteWebDriver-class). This library really is just a thin wrapper around the core webdriver.
-- Offers a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who are super technical for whatever reason. Some of them may be useful to experienced people as well.
+- Offers a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who may not be that technical. Some of them may be useful to experienced people as well.
 - Supports both local and remote webdriver usage. Both of these "modes" are achieved purely via RemoteWebDriver. I specially chose not to use the local browser-driver classes to keep things simple. More on what this means later for those who don't know.
 - Offers support for Chrome, Firefox, Edge and IE. Anything else and you'll have to write your own implementation, sorry.
 
@@ -339,3 +339,9 @@ By way of example:
 ```
 
 If you call **GetDirectChildren()** on **section** you'll only get the **divs**. If you call **GetDescendants()** you'll get both the **divs**, **p's** and the **span**.
+
+# TODO:
+
+I know I said there's no roadmap but there might still be things I'd like to change/add when I get the chance:
+- The option to auto-download webdrivers
+I once saw this done by another Selenium framework and it was awesome. I'm pretty sure this could be pulled off but it's a bigger deal than just adding a few new methods.
