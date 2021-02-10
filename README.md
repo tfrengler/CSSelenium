@@ -343,5 +343,7 @@ If you call **GetDirectChildren()** on **section** you'll only get the **divs**.
 # TODO:
 
 I know I said there's no roadmap but there might still be things I'd like to change/add when I get the chance:
-- The option to auto-download webdrivers
+- The option to auto-download/update webdrivers<br/>
 I once saw this done by another Selenium framework and it was awesome. I'm pretty sure this could be pulled off but it's a bigger deal than just adding a few new methods.
+- Logging
+Don't want to make it complicated. I'll probably do this via an event that you can hook into and then you can decide what to do with the log messages.
