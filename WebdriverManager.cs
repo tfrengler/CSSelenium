@@ -15,6 +15,10 @@ namespace TFrengler.Selenium
         private readonly DriverService[] DriverServices;
         private readonly string[] DriverNames;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="fileLocation">The folder where the webdriver executables are. Note that the original file names of the webdrivers are expected! (chromedriver, geckodriver etc)</param>
         public WebdriverManager(DirectoryInfo fileLocation)
         {
             DriverNames = new string[4] { "msedgedriver","geckodriver","chromedriver","IEDriverServer" };
@@ -25,6 +29,13 @@ namespace TFrengler.Selenium
                 throw new Exception("Unable to instantiate BrowserDriver. Directory with drivers does not exist: " + fileLocation.FullName);
         }
 
+        /// <summary>
+        /// Starts the given webdriver for the given browser, and return the URI that it's running on
+        /// </summary>
+        /// <param name="browser">The browser whose driver you wish to start</param>
+        /// <param name="killExisting">If passed as true it will kill the already running instance. Otherwise it will throw an exception. Optional, defaults to false</param>
+        /// <param name="port">The port you wish to start the webdriver on. Optional, defaults to a random, free port on the system</param>
+        /// <returns>The URI that the webdriver is running on</returns>
         public Uri Start(Browser browser, bool killExisting = false, ushort port = 0)
         {
             bool RunningOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -83,6 +94,11 @@ namespace TFrengler.Selenium
             return Service.ServiceUrl;
         }
 
+        /// <summary>
+        /// Check whether the webdriver for the given browser is running, and able to receive commands
+        /// </summary>
+        /// <param name="browser">The browser whose status you want to check</param>
+        /// <returns>A boolean to indicate whether the driver is running</returns>
         public bool IsRunning(Browser browser)
         {
             lock(DriverServices.SyncRoot)
@@ -93,6 +109,11 @@ namespace TFrengler.Selenium
             }
         }
 
+        /// <summary>
+        /// Shuts down the given webdriver. If any browser instances are open, those will be killed as well.
+        /// </summary>
+        /// <param name="browser">The browser whose webdriver you want to stop</param>
+        /// <returns>A boolean to indicate whether the driver was stopped or not. If the driver isn't running it is therefore safe to call stop without worrying about exceptions</returns>
         public bool Stop(Browser browser)
         {
             lock(DriverServices.SyncRoot)
@@ -109,6 +130,9 @@ namespace TFrengler.Selenium
             return false;
         }
 
+        /// <summary>
+        /// Shuts down all the running webdrivers and any browser instances that are open
+        /// </summary>
         public void Dispose()
         {
             Stop(Browser.EDGE);

@@ -27,26 +27,41 @@ namespace TFrengler.Selenium
 
         #region CONSTRUCTORS
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="browser">The browser this instance of Selenium represents</param>
+        /// <param name="remoteURL">The url of the webdriver. If you make use of <see cref="WebdriverManager"/> then you get this from <see cref="WebdriverManager.Start"/></param>
         public SeleniumWrapper(Browser browser, Uri remoteURL)
         {
             Create(browser, remoteURL);
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="browser">The browser this instance of Selenium represents</param>
+        /// <param name="remoteURL">The url of the webdriver. If you make use of <see cref="WebdriverManager"/> then you get this from <see cref="WebdriverManager.Start"/></param>
+        /// <param name="browserArguments">An array of arguments to be passed to the browser, such as "--headless" for Chrome for example</param>
         public SeleniumWrapper(Browser browser, Uri remoteURL, string[] browserArguments)
         {
             Create(browser, remoteURL, browserArguments);
         }
 
-        public SeleniumWrapper(Browser browser, Uri remoteURL, DriverOptions options)
+        /// <summary>
+        /// Constructor
+        /// <param name="remoteURL">The url of the webdriver. If you make use of <see cref="WebdriverManager"/> then you get this from <see cref="WebdriverManager.Start"/></param>
+        /// <param name="options">An instance of <see cref="OpenQa.Selenium.DriverOptions"/>. This allows you to customize the start-up of the browser yourself. You are responsible for setting everything up, including browser arguments, proxies etc</param>
+        public SeleniumWrapper(Uri remoteURL, DriverOptions options)
         {
-            Create(browser, remoteURL, null, options);
+            Create(null, remoteURL, null, options);
         }
 
         #endregion
 
-        private SeleniumWrapper Create(Browser browser, Uri remoteURL, string[] browserArguments = null, DriverOptions options = null)
+        private SeleniumWrapper Create(Browser? browser, Uri remoteURL, string[] browserArguments = null, DriverOptions options = null)
         {
-            var Options = options ?? CreateDriverOptions(browser, browserArguments);
+            var Options = options ?? CreateDriverOptions(browser.Value, browserArguments);
             Webdriver = new RemoteWebDriver(remoteURL, Options);
 
             GetElement = new ElementLocator(Webdriver);
@@ -122,6 +137,9 @@ namespace TFrengler.Selenium
             };
         }
 
+        /// <summary>
+        /// Closes the webdriver if it's running
+        /// </summary>
         public void Dispose()
         {
             if (Webdriver != null) Webdriver.Quit();

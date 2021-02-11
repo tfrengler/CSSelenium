@@ -3,6 +3,9 @@ using OpenQA.Selenium;
 
 namespace TFrengler.Selenium
 {
+    /// <summary>
+    /// Utility class for creating Selenium's By-classes for locating elements based on certain criteria
+    /// </summary>
     public static class LocatorFactory
     {
         private static By ByAttributeAndOperator(string attribute, string value, char searchOperator = char.MinValue, string elementType = null)
