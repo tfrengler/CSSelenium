@@ -101,7 +101,7 @@ _NOTE:_ **Dispose()** also calls Webdriver.Quit()
 ```c#
 public SeleniumWrapper(Browser browser, Uri remoteURL)
 public SeleniumWrapper(Browser browser, Uri remoteURL, string[] browserArguments)
-public SeleniumWrapper(Browser browser, Uri remoteURL, DriverOptions options)
+public SeleniumWrapper(Uri remoteURL, DriverOptions options)
 ```
 The three constructors offer you a few choices about the Selenium-instance's configuration.<br/>
 The first constructor is the most simple to use, just requiring to know which browser you want to interact with and the URL to the webdriver it should use to communicate with that browser.
