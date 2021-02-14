@@ -14,15 +14,15 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 
 **So what does it do?**
 - Abstracts away getting an instance of RemoteWebDriver, which is the primary interface for interacting with the browser.
-- Abstracts away the finer details of starting and stopping the webdriver executables for a given browser.
-- Aside from hiding the details of the instantiation, you get full access to the Selenium-object (RemoteWebDriver-class). This library really is just a thin wrapper around the core webdriver.
-- Offers a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who may not be that technical. Some of them may be useful to experienced people as well.
-- Supports both local and remote webdriver usage. Both of these "modes" are achieved purely via RemoteWebDriver. I specially chose not to use the local browser-driver classes to keep things simple. More on what this means later for those who don't know.
+- Abstracts away the finer details of starting and stopping the webdriver executables for a given browser. The webdriver manager uses the DriverService-classes under the hood.
+- Aside from hiding the finer details of the instantiation, you get full access to the RemoteWebDriver via the wrapper.
+- Supports both local and remote webdriver usage. Both of these "modes" are achieved purely via the RemoteWebDriver-class. I specially chose not to use the local browser-driver classes to keep things simple.
 - Offers support for Chrome, Firefox, Edge and IE. Anything else and you'll have to write your own implementation, sorry.
+- As a bonus, I included a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who may not be that technical. Some of them may be useful to experienced people as well, or just to get ideas on how to do similar things yourself.
 
 **Disclaimers**
-- This code was written by me, primarily for use by me, and thus it adheres very much to my principles of software architecture. Basically: if you don't like the way it works or how I wrote this then I would thank you kindly to simply walk away rather than offer negativity. Constructive feedback is always welcome of course.
-- This library is provided "as is". I have no roadmap for future features, and bugs will only be fixed when and if I feel like it. I don't say this to be mean, but my life is simply too busy to consistently maintain this. I hope you understand.
+- Constructive feedback is always welcome, though keep in mind this library was written by me, primarily for use by me, and thus it adheres very much to my principles of software architecture. 
+- This library is provided "as is". I have no roadmap for future features, and bugs will only be fixed when or if I have time for it.
 
 ## Compatibility/requirements
 
@@ -42,7 +42,7 @@ The whole thing _might_ work for earlier versions, and possibly .NET 5.0. Howeve
 
 ## Getting started
 
-There are two principal classes to work with: **SeleniumWrapper** and **WebdriverManager**. Remember what I said earlier about "local" and "remote" modes? If you are not running the webdriver-executables locally then you don't have to care about **WebdriverManager**. Since I guess that most people's basic usage is running the browser and webdriver on the same machine as the tests that's the example we'll go with:
+There are two principal classes to work with: **SeleniumWrapper** and **WebdriverManager**. Remember what I said earlier about "local" and "remote" mode? If you are not running the webdriver-executables locally then you don't have to care about **WebdriverManager**. Since I guess that most people's basic usage is running the browser and webdriver on the same machine as the tests that's the example we'll go with:
 
 ```c#
     // Need to tell the webdriver manager the directory the webdriver executables live in
@@ -85,7 +85,7 @@ Again, if you are running the webdrivers somewhere else (presumably via Selenium
 }
 ```
 
-It's worth noting that Edge is the legacy version (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 does not offer support for the new edge version.
+It's worth noting that Edge is the legacy version (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 does not offer support for the new edge version, as far as I know anyway.
 
 Also worth noting is that IE is quirky and can be hard to get to cooperate. And it requires more work than simply starting the driver and interfacing with it via Selenium: https://github.com/SeleniumHQ/selenium/wiki/InternetExplorerDriver#required-configuration
 
@@ -172,6 +172,15 @@ Returns a boolean to indicate whether the browser driver was stopped, or not. It
 public void Dispose()
 ```
 This will attempt to kill all running webdrivers
+
+## BONUS: Tools and helpers
+
+These are the classes **LocatorFactory**, **SeleniumTools**, **WebdriverExtensions** and **ElementLocator/ElementsLocator**
+The short version:
+- LocatorFactory: a static class for creating **locators** (Selenium By-class instances) that are used by Selenium's **FindElement()** and **FindElements()** methods.
+- SeleniumTools: a class with specialized (and opinionated) tools that I have personally used a lot over the years. Exposed via **SeleniumWrapper.Tools**
+- WebdriverExtensions: adds a few extension methods to IWebElement, mostly for getting elements related to the current element (such as **GetDirectChildren()**, **GetParent()**, **GetNextSiblingElement()** etc). To use these you must include the namespace **TFrengler.Selenium.Extensions**
+- ElementLocator/ElementsLocator: classes with convenience methods for fetching elements via single attributes, such as **ById()**, **ByClass**. Exposed via **SeleniumWrapper.GetElement** and **SeleniumWrapper.GetElements**
 
 # TODO:
 
