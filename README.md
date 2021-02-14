@@ -46,7 +46,7 @@ There are two principal classes to work with: **SeleniumWrapper** and **Webdrive
 
 ```c#
     // Need to tell the webdriver manager the directory the webdriver executables live in
-    var WebdriverExecutablesLocation = new DirectoryInfo("C:\somepath\");
+    var WebdriverExecutablesLocation = new DirectoryInfo(@"C:\somepath\");
     var Manager = new WebdriverManager(WebdriverExecutablesLocation);
 
     // Once you start the webdriver you get the uri that it is running on
