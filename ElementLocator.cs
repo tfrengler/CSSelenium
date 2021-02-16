@@ -2,17 +2,28 @@ using OpenQA.Selenium;
 
 namespace TFrengler.Selenium
 {
+    /// <summary>
+    /// Helper class with methods for finding single elements, based on attribute and/or tag-name
+    /// </summary>
     public sealed class ElementLocator
     {
         private readonly ISearchContext Context;
         private string XPathAxis;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="context">The context to confine the search within. This can be an element, or the webdriver. By default it's the webdriver, meaning we search the entire document. Note that the XPath axis using methods are set to searching the entire document regardless!</param>
         public ElementLocator(ISearchContext context)
         {
             Context = context;
             XPathAxis = "//";
         }
 
+        /// <summary>
+        /// Returns a new instance of ElementLocator, but confines the search to within a given element
+        /// </summary>
+        /// <param name="element">The element you want to search for elements within</param>
         public ElementLocator Within(IWebElement context)
         {
             return new ElementLocator(context) { XPathAxis = ".//" };

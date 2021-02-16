@@ -3,17 +3,28 @@ using System.Collections.ObjectModel;
 
 namespace TFrengler.Selenium
 {
+    /// <summary>
+    /// Helper class with methods for finding multiple elements, based on attribute and/or tag-name
+    /// </summary>
     public sealed class ElementsLocator
     {
         private readonly ISearchContext Context;
         private string XPathAxis;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="context">The context to confine the search within. This can be an element, or the webdriver. By default it's the webdriver, meaning we search the entire document. Note that the XPath axis using methods are set to searching the entire document regardless!</param>
         public ElementsLocator(ISearchContext context)
         {
             Context = context;
             XPathAxis = "//";
         }
 
+        /// <summary>
+        /// Returns a new instance of ElementLocator, but confines the search to within a given element
+        /// </summary>
+        /// <param name="element">The element you want to search for elements within</param>
         public ElementsLocator Within(IWebElement context)
         {
             return new ElementsLocator(context) { XPathAxis = ".//" };

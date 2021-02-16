@@ -18,43 +18,19 @@ namespace TFrengler.Selenium
             WebDriver = webdriver;
         }
 
-        public void DownloadFile(Uri fileURL, FileStream output)
-        {
-            ICookieJar ExistingCookies = WebDriver.Manage().Cookies;
-
-            HttpWebRequest AttachmentDownloadRequest = (HttpWebRequest)WebRequest.Create(fileURL);
-            AttachmentDownloadRequest.Method = "GET";
-            AttachmentDownloadRequest.Accept = "*/*"; // image/bmp,image/jpeg,image/png,image/webp
-            AttachmentDownloadRequest.AllowAutoRedirect = false;
-            AttachmentDownloadRequest.UserAgent = (string)WebDriver.ExecuteScript("return navigator.userAgent;");
-            AttachmentDownloadRequest.CookieContainer = new CookieContainer();
-
-            // We need to imitate all the cookies from the application otherwise our request will be refused
-            foreach (var CurrentCookie in ExistingCookies.AllCookies)
-                AttachmentDownloadRequest.CookieContainer.Add(new System.Net.Cookie(CurrentCookie.Name, CurrentCookie.Value) { Domain = fileURL.Host });
-
-            HttpWebResponse AttachmentDownloadResponse = (HttpWebResponse)AttachmentDownloadRequest.GetResponse();
-            if (AttachmentDownloadResponse.StatusCode != HttpStatusCode.OK)
-            {
-                AttachmentDownloadResponse.Dispose();
-                output.Dispose();
-                throw new Exception("Unable to download file, request status is not '200 OK': " + AttachmentDownloadResponse.StatusCode);
-            }
-
-            AttachmentDownloadResponse.GetResponseStream().CopyTo(output);
-
-            // CLEANUP
-            output.Flush();
-            output.Dispose();
-            AttachmentDownloadResponse.Dispose();
-        }
-
+        /// <summary>
+        /// Helper method to quickly scroll to an element, moving it into view. This can be incredidibly finnicky to pull off so no guarantees that this works every time
+        /// </summary>
         public void ScrollToElement(IWebElement element)
         {
             var Actions = new Actions(WebDriver);
             Actions.MoveToElement(element);
         }
 
+        /// <summary>
+        /// Clicks on a given element by invoking the JS click()-handler instead of simulating clicking with the mouse
+        /// </summary>
+        /// <param name="element">The element you want to click on</param>
         public void ClickElementUsingJS(IWebElement element)
         {
             WebDriver.ExecuteScript("arguments[0].click()", new object[] { element });
