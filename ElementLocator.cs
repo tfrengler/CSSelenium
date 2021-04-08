@@ -21,9 +21,9 @@ namespace TFrengler.Selenium
         }
 
         /// <summary>
-        /// Returns a new instance of ElementLocator, but confines the search to within a given element
+        /// Returns a new instance of ElementLocator, but confines the search to within a given search context
         /// </summary>
-        /// <param name="element">The element you want to search for elements within</param>
+        /// <param name="context">The element or driver you want to search for elements within</param>
         public ElementLocator Within(IWebElement context)
         {
             return new ElementLocator(context) { XPathAxis = ".//" };

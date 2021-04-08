@@ -50,8 +50,9 @@ namespace TFrengler.Selenium
 
         /// <summary>
         /// Constructor
+        /// </summary>
         /// <param name="remoteURL">The url of the webdriver. If you make use of <see cref="WebdriverManager"/> then you get this from <see cref="WebdriverManager.Start"/></param>
-        /// <param name="options">An instance of <see cref="OpenQa.Selenium.DriverOptions"/>. This allows you to customize the start-up of the browser yourself. You are responsible for setting everything up, including browser arguments, proxies etc</param>
+        /// <param name="options">An instance of 'OpenQa.Selenium.DriverOptions'. This allows you to customize the start-up of the browser yourself. You are responsible for setting everything up, including browser arguments, proxies etc</param>
         public SeleniumWrapper(Uri remoteURL, DriverOptions options)
         {
             Create(null, remoteURL, null, options);
