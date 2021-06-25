@@ -17,6 +17,16 @@ namespace TFrengler.Selenium
         IE11    = 3
     }
 
+    public enum Platform
+    {
+        WINDOWS, LINUX
+    }
+
+    public enum Architecture
+    {
+        x64, x86
+    }
+
     public sealed class SeleniumWrapper : IDisposable
     {
         public Browser Browser {get; private set;}

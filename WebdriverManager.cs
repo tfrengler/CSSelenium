@@ -1,6 +1,14 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Net;
+using System.Net.Http;
+using System.IO.Compression;
+using System.Threading;
+using System.Linq;
+using System.Collections.Generic;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
@@ -14,6 +22,9 @@ namespace TFrengler.Selenium
         private readonly DirectoryInfo FileLocation;
         private readonly DriverService[] DriverServices;
         private readonly string[] DriverNames;
+        private readonly HttpClient HttpClient;
+
+        private readonly Dictionary<Browser, string> BrowserLatestVersionURLs;
 
         /// <summary>
         /// Constructor
@@ -21,9 +32,17 @@ namespace TFrengler.Selenium
         /// <param name="fileLocation">The folder where the webdriver executables are. Note that the original file names of the webdrivers are expected! (chromedriver, geckodriver etc)</param>
         public WebdriverManager(DirectoryInfo fileLocation)
         {
-            DriverNames = new string[4] { "msedgedriver","geckodriver","chromedriver","IEDriverServer" };
+            DriverNames = new string[4] { "msedgedriver", "geckodriver", "chromedriver", "IEDriverServer" };
             DriverServices = new DriverService[4];
             FileLocation = fileLocation;
+            HttpClient = new HttpClient(new HttpClientHandler() { AllowAutoRedirect = false });
+
+            BrowserLatestVersionURLs = new Dictionary<Browser, string>()
+            {
+                { Browser.CHROME, "https://chromedriver.storage.googleapis.com/LATEST_RELEASE" },
+                { Browser.FIREFOX, "https://github.com/mozilla/geckodriver/releases/latest" },
+                { Browser.EDGE, "https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver/LATEST_STABLE" }
+            };
 
             if (!FileLocation.Exists)
                 throw new Exception("Unable to instantiate BrowserDriver. Directory with drivers does not exist: " + fileLocation.FullName);
@@ -44,7 +63,7 @@ namespace TFrengler.Selenium
                 throw new Exception($"You are attempting to run the {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
 
             string DriverName;
-            lock(DriverNames.SyncRoot)
+            lock (DriverNames.SyncRoot)
             {
                 if (RunningOnWindows)
                     DriverName = DriverNames[(int)browser] + ".exe";
@@ -53,7 +72,7 @@ namespace TFrengler.Selenium
             }
 
             DriverService Service;
-            lock(DriverServices.SyncRoot)
+            lock (DriverServices.SyncRoot)
             {
                 Service = DriverServices[(int)browser];
             }
@@ -86,7 +105,7 @@ namespace TFrengler.Selenium
             if (port > 0) Service.Port = port;
             Service.Start();
 
-            lock(DriverServices.SyncRoot)
+            lock (DriverServices.SyncRoot)
             {
                 DriverServices[(int)browser] = Service;
             }
@@ -101,7 +120,7 @@ namespace TFrengler.Selenium
         /// <returns>A boolean to indicate whether the driver is running</returns>
         public bool IsRunning(Browser browser)
         {
-            lock(DriverServices.SyncRoot)
+            lock (DriverServices.SyncRoot)
             {
                 DriverService Service = DriverServices[(int)browser];
                 if (Service == null) return false;
@@ -116,7 +135,7 @@ namespace TFrengler.Selenium
         /// <returns>A boolean to indicate whether the driver was stopped or not. If the driver isn't running it is therefore safe to call stop without worrying about exceptions</returns>
         public bool Stop(Browser browser)
         {
-            lock(DriverServices.SyncRoot)
+            lock (DriverServices.SyncRoot)
             {
                 DriverService Service = DriverServices[(int)browser];
                 if (Service != null)
@@ -128,6 +147,278 @@ namespace TFrengler.Selenium
             }
 
             return false;
+        }
+
+        // Webdriver download code
+
+        private string GetVersionFileName(Browser browser, Platform platform) => $"{DriverNames[(int)browser]}_{Enum.GetName(typeof(Platform), platform)}_version.txt";
+        private long ParseVersionNumber(string version) => long.Parse(Regex.Replace(version, @"[a-zA-Z|\.]", ""));
+
+        /// <summary>
+        /// Downloads the latest webdriver binary for a given browser and platform if it's newer than the current version (or there is no current version)
+        /// </summary>
+        /// <returns>A string with a text message indicating whether the driver was updated or not</returns>
+        public string GetLatestWebdriverBinary(Browser browser, Platform platform, Architecture architecture)
+        {
+            if (browser == Browser.EDGE && platform == Platform.LINUX)
+                throw new Exception("Error fetching latest webdriver binary! Edge is not available on Linux");
+
+            if (browser == Browser.CHROME && platform == Platform.LINUX && architecture == Architecture.x86)
+                throw new Exception("Error fetching latest webdriver binary! Chrome on Linux only supports x64");
+
+            if (browser == Browser.CHROME && platform == Platform.WINDOWS && architecture == Architecture.x64)
+                throw new Exception("Error fetching latest webdriver binary! Chrome on Linux only supports x86");
+
+            if (browser == Browser.IE11)
+                throw new Exception("Error fetching latest webdriver binary! The IE11 driver is not supported for automatic downloading");
+
+            var VersionFile = new FileInfo(FileLocation.FullName + GetVersionFileName(browser, platform));
+            string CurrentVersion = GetCurrentVersion(browser, platform);
+            string LatestVersion = DetermineLatestAvailableVersion(browser);
+
+            if (ParseVersionNumber(CurrentVersion) >= ParseVersionNumber(LatestVersion))
+                return $"The {Enum.GetName(typeof(Browser), browser)}-webdriver is already up to date, not downloading (Current: {CurrentVersion} | Latest: {LatestVersion})";
+
+            Uri LatestWebdriverVersionURL = ResolveDownloadURL(LatestVersion, browser, platform, architecture);
+            DownloadAndExtract(LatestWebdriverVersionURL, browser, platform, LatestVersion);
+
+            return $"The {Enum.GetName(typeof(Browser), browser)}-webdriver has been updated to the latest version ({LatestVersion})";
+        }
+
+        /// <summary>
+        /// Retrieves the current version if a given webdriver for a given platform
+        /// </summary>
+        /// <returns>The current version if both the webdriver and the version file exists, otherwise "0"</returns>
+        public string GetCurrentVersion(Browser browser, Platform platform)
+        {
+            var VersionFile = new FileInfo(Path.Combine(FileLocation.FullName, GetVersionFileName(browser, platform)));
+
+            string DriverName = DriverNames[(int)browser];
+            if (platform == Platform.WINDOWS) DriverName = DriverName + ".exe";
+            var WebdriverFile = new FileInfo(Path.Combine(FileLocation.FullName, DriverName));
+
+            if (WebdriverFile.Exists && VersionFile.Exists)
+                return File.ReadAllText(VersionFile.FullName);
+
+            return "0";
+        }
+
+        /// <summary>
+        /// Attempts to determines and retrieve the latest available version of the webdriver for the given browser
+        /// </summary>
+        /// <returns>A string representing the latest available version of the webdriver for a given browser</returns>
+        public string DetermineLatestAvailableVersion(Browser browser)
+        {
+            var Request = new HttpRequestMessage()
+            {
+                RequestUri = new Uri(BrowserLatestVersionURLs[browser]),
+                Method = HttpMethod.Get
+            };
+
+            var CancellationTokenSource = new CancellationTokenSource(10000);
+            HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
+            Stream ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+
+            if (browser == Browser.FIREFOX)
+            {
+                return Response.Headers.Location.ToString().Split('/').Last();
+            }
+
+            using (var StreamReader = new StreamReader(ResponseStream))
+            {
+                return StreamReader.ReadToEnd().Trim();
+            };
+        }
+
+        private Uri ResolveDownloadURL(string version, Browser browser, Platform platform, Architecture architecture)
+        {
+            string PlatformPart = "", ArchitecturePart = "", FileTypePart = "", ReturnData = "";
+
+            switch (architecture)
+            {
+                case Architecture.x64:
+                    ArchitecturePart = "64";
+                    break;
+                case Architecture.x86:
+                    ArchitecturePart = "32";
+                    break;
+            }
+
+            switch (platform)
+            {
+                case Platform.LINUX:
+                    PlatformPart = "linux";
+                    FileTypePart = "tar.gz";
+                    break;
+
+                case Platform.WINDOWS:
+                    PlatformPart = "win";
+                    FileTypePart = "zip";
+                    break;
+            }
+
+            switch (browser)
+            {
+                case Browser.FIREFOX:
+                    ReturnData = $"https://github.com/mozilla/geckodriver/releases/download/{version}/geckodriver-{version}-{PlatformPart}{ArchitecturePart}.{FileTypePart}";
+                    break;
+
+                case Browser.CHROME:
+                    ReturnData = $"https://chromedriver.storage.googleapis.com/{version}/chromedriver_{PlatformPart}{ArchitecturePart}.zip";
+                    break;
+
+                case Browser.EDGE:
+                    ReturnData = $"https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver/{version}/edgedriver_{PlatformPart}{ArchitecturePart}.zip";
+                    break;
+            }
+
+            return new Uri(ReturnData);
+        }
+
+        private void DownloadAndExtract(Uri URL, Browser browser, Platform platform, string version)
+        {
+            string DownloadedFileName = URL.ToString().Split('/').Last();
+            FileInfo DownloadedPathAndFile = new FileInfo(Path.GetTempPath() + DownloadedFileName);
+            string VersionFileName = GetVersionFileName(browser, platform);
+
+            var Request = new HttpRequestMessage()
+            {
+                RequestUri = URL,
+                Method = HttpMethod.Get
+            };
+
+            var CancellationTokenSource = new CancellationTokenSource(60000);
+            HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
+
+            // Need to do a second download for Firefox due to the redirect
+            if (browser == Browser.FIREFOX)
+            {
+                if (Response.StatusCode != HttpStatusCode.Redirect)
+                    throw new Exception($"Error downloading newest geckodriver: request didn't yield a 302 as expected ({URL})");
+
+                var FirefoxRequest = new HttpRequestMessage()
+                {
+                    RequestUri = Response.Headers.Location,
+                    Method = HttpMethod.Get
+                };
+
+                Response = HttpClient.SendAsync(FirefoxRequest).GetAwaiter().GetResult();
+            }
+
+            Response.EnsureSuccessStatusCode();
+
+            Stream ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+            var Buffer = new byte[ResponseStream.Length];
+
+            using (var StreamReader = new StreamReader(ResponseStream))
+            {
+                ResponseStream.Read(Buffer, 0, (int)ResponseStream.Length);
+            }
+
+            if (browser == Browser.FIREFOX && platform == Platform.LINUX)
+            {
+                ExtractTarGz(Buffer);
+            }
+            else
+            {
+                string ExtractedFileName = DriverNames[(int)browser];
+                if (platform == Platform.WINDOWS) ExtractedFileName = ExtractedFileName + ".exe";
+
+                var ExtractedFileNameAndPath = new FileInfo(Path.GetTempPath() + ExtractedFileName);
+                // Of course the Edge-zip contains a silly, extra folder and not just the driver binary...
+                var ExtraFolder = new DirectoryInfo(Path.GetTempPath() + "Driver_Notes");
+
+                // Deleting the file (and extra folders...) in case they exist or ZipFile.ExtractToDirectory will throw an exception
+                if (browser == Browser.EDGE && ExtraFolder.Exists) ExtraFolder.Delete(true);
+                ExtractedFileNameAndPath.Delete();
+
+                // Write the downloaded file to disk (temp location) and then extract the zip, and copy the binary
+                File.WriteAllBytes(DownloadedPathAndFile.FullName, Buffer);
+                ZipFile.ExtractToDirectory(DownloadedPathAndFile.FullName, Path.GetTempPath());
+                File.Copy(ExtractedFileNameAndPath.FullName, Path.Combine(FileLocation.FullName, ExtractedFileName), true);
+
+                // Clean-up, remove the extracted binaries from the temp folder (and Edge's extra folder)
+                DownloadedPathAndFile.Delete();
+                ExtractedFileNameAndPath.Delete();
+                if (browser == Browser.EDGE && ExtraFolder.Exists) ExtraFolder.Delete(true);
+            }
+
+            // (over)Write the version file with the new version and delete the temporary, downloaded zip-file
+            File.WriteAllText(Path.Combine(FileLocation.FullName, VersionFileName), version);
+
+            // if (RunningOnLinux)
+            // {
+            //     // Need to set read/write and execute permissions on Linux
+            //     fileSetAccessMode("#DriverFolder#/#WebdriverFileName#", "744");
+            //     fileSetAccessMode("#DriverFolder#/#VersionFileName#", "744");
+            // }
+        }
+
+        private void ExtractTarGz(byte[] tarGzData)
+        {
+            var DecompressedFileStream = new MemoryStream();
+            GZipStream DecompressionStream = new GZipStream(new MemoryStream(tarGzData), CompressionMode.Decompress);
+
+            int ChunkSize = 4096;
+            int Read = ChunkSize;
+            byte[] ReadBuffer = new byte[ChunkSize];
+
+            while (Read == ChunkSize)
+            {
+                Read = DecompressionStream.Read(ReadBuffer, 0, ChunkSize);
+                DecompressedFileStream.Write(ReadBuffer, 0, Read);
+            }
+
+            DecompressedFileStream.Seek(0, SeekOrigin.Begin);
+            ExtractTar(DecompressedFileStream);
+
+            DecompressionStream.Dispose();
+            DecompressedFileStream.Dispose();
+        }
+
+        // https://gist.github.com/ForeverZer0/a2cd292bd2f3b5e114956c00bb6e872b
+        private void ExtractTar(Stream tarStream)
+        {
+            var ReadBuffer = new byte[100];
+
+            while (true)
+            {
+                tarStream.Read(ReadBuffer, 0, 100);
+                string Name = Encoding.ASCII.GetString(ReadBuffer).Trim('\0');
+
+                if (String.IsNullOrWhiteSpace(Name))
+                    break;
+
+                tarStream.Seek(24, SeekOrigin.Current);
+                tarStream.Read(ReadBuffer, 0, 12);
+                Int64 Size = Convert.ToInt64(Encoding.UTF8.GetString(ReadBuffer, 0, 12).Trim('\0').Trim(), 8);
+
+                tarStream.Seek(376L, SeekOrigin.Current);
+                string Output = Path.Combine(FileLocation.FullName, Name);
+
+                // Get the directory part of the output and create the folder if it doesn't exist
+                if (!Directory.Exists(Path.GetDirectoryName(Output)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(Output));
+
+                // Is a directory? If not then it's a file and we'll extract it
+                if (!Name.EndsWith("/"))
+                {
+                    using (FileStream FileOutputStream = File.Open(Output, FileMode.OpenOrCreate, FileAccess.Write))
+                    {
+                        var OutputBuffer = new byte[Size];
+                        tarStream.Read(OutputBuffer, 0, OutputBuffer.Length);
+                        FileOutputStream.Write(OutputBuffer, 0, OutputBuffer.Length);
+                    }
+                }
+
+                Int64 Position = tarStream.Position;
+                Int64 Offset = 512 - (Position % 512);
+
+                if (Offset == 512)
+                    Offset = 0;
+
+                tarStream.Seek(Offset, SeekOrigin.Current);
+            }
         }
 
         /// <summary>
