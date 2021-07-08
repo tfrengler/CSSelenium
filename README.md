@@ -67,6 +67,20 @@ There are two principal classes to work with: **SeleniumWrapper** and **Webdrive
 
 Again, if you are running the webdrivers somewhere else (presumably via Selenium Standalone Server) you can ignore the **WebdriverManager** entirely. Just pass in the URL of your webdriver-server/location to **SeleniumWrapper()**.
 
+## Webdriver binary download tool
+
+Recently I added functionality that allows the framework to download latest webdriver binaries for you. The main method for doing so is called **GetLatestWebdriverBinary**, and allows you to chose the browser, platform and architecture you want to download for. This method will check if your current version (works even if you have no webdrivers downloaded yet) is lower than the latest available then downloads, and extracts it for you. You could chose to call this method each time before you start a test run for example, to ensure you always have the newest version.
+
+There's another method called **DetermineLatestAvailableVersion** you can use to get latest version as a string to do with as you please, as well as **GetCurrentVersion** which does exactly what it says. Together you could use these to determine yourself whether you need to update, even displaying it on a webpage somewhere.
+
+Whichever option you chose you will ALWAYS incur at least one HTTP call to determine the latest version. The call to get the version times out after 10 seconds, and the call to download the binary times out after 30.
+
+The current version of the webdriver binary is stored in a text-file in the webdriver folder, called **BROWSER_PLATFORM_version.txt**. If this file is not present the current version is considered to be 0 which will cause the newest binary to be downloaded.
+
+You can download and keep webdriver binaries per platform but not per architecture. This is mostly to keep the handling of the files internally for starting and stopping the DriverService simple and stable.
+
+IE11 is not supported mostly because this version follows Selenium's (since the Selenium project makes and maintains the IEDriver) so it's not gonna change often anyway and wasn't worth the trouble implementing.
+
 ## Technical overview (classes, public methods, properties etc)
 
 ### Namespaces
@@ -185,7 +199,5 @@ The short version:
 # TODO:
 
 I know I said there's no roadmap but there might still be things I'd like to change/add when I get the chance:
-- The option to auto-download/update webdrivers<br/>
-I once saw this done by another Selenium framework and it was awesome. I'm pretty sure this could be pulled off but it's a bigger deal than just adding a few new methods.
 - Logging
 Don't want to make it complicated. I'll probably do this via an event that you can hook into and then you can decide what to do with the log messages.
