@@ -81,6 +81,10 @@ You can download and keep webdriver binaries per platform but not per architectu
 
 IE11 is not supported mostly because this version follows Selenium's (since the Selenium project makes and maintains the IEDriver) so it's not gonna change often anyway and wasn't worth the trouble implementing.
 
+```c#
+public string GetLatestWebdriverBinary(Selenium.Browser browser, Selenium.Platform platform, Selenium.Architecture architecture);
+```
+
 ## Technical overview (classes, public methods, properties etc)
 
 ### Namespaces
