@@ -20,6 +20,10 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 - Offers support for Chrome, Firefox, Edge and IE. Anything else and you'll have to write your own implementation, sorry.
 - As a bonus, I included a fairly small suite of tools for performing common actions, and dealing with some common trouble scenarios. Most of these are aimed at beginners or those who may not be that technical. Some of them may be useful to experienced people as well, or just to get ideas on how to do similar things yourself.
 
+**Known issues**
+
+Firefox on Linux may throw an error related to profiles (cannot be loaded or is inaccessible). It seems to have something to do with the profile.ini file being in the snap/mozilla/... folder but selenium tries to find it in the local/bin or usr/bin folders. I haven't been able to find a fix for this yet.
+
 **Disclaimers**
 - Constructive feedback is always welcome, though keep in mind this library was written by me, primarily for use by me, and thus it adheres very much to my principles of software architecture. 
 - This library is provided "as is". I have no roadmap for future features, and bugs will only be fixed when or if I have time for it.
