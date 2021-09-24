@@ -176,6 +176,9 @@ namespace TFrengler.Selenium
             string CurrentVersion = GetCurrentVersion(browser, platform);
             string LatestVersion = DetermineLatestAvailableVersion(browser);
 
+            CurrentVersion = CurrentVersion.PadRight(20, '0');
+            LatestVersion = LatestVersion.PadRight(20, '0');
+
             if (ParseVersionNumber(CurrentVersion) >= ParseVersionNumber(LatestVersion))
                 return $"The {Enum.GetName(typeof(Browser), browser)}-webdriver is already up to date, not downloading (Current: {CurrentVersion} | Latest: {LatestVersion})";
 

@@ -4,7 +4,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>CSSelenium</AssemblyName>
-    <VersionPrefix>1.0.6</VersionPrefix>
+    <VersionPrefix>1.0.7</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Authors>Thomas Frengler</Authors>
     <Copyright>Thomas Frengler @ 2021</Copyright>
