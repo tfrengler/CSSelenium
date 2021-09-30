@@ -1,7 +1,7 @@
 #r "../bin/Debug/netcoreapp3.1/CSSelenium.dll"
-#r "../bin/Debug/netcoreapp3.1/Publish/WebDriver.dll"
-#r "../bin/Debug/netcoreapp3.1/Publish/WebDriver.Support.dll"
-#r "../bin/Debug/netcoreapp3.1/Publish/System.Text.Encoding.CodePages.dll"
+#r "../bin/Debug/netcoreapp3.1/publish/WebDriver.dll"
+#r "../bin/Debug/netcoreapp3.1/publish/WebDriver.Support.dll"
+#r "../bin/Debug/netcoreapp3.1/publish/System.Text.Encoding.CodePages.dll"
 #r "System.IO.FileSystem"
 
 using TFrengler.Selenium;
