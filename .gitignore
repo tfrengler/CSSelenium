@@ -351,10 +351,3 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-
-# Custom ignores, specific to this project
-/Logs/*.*
-/TestResults/*.*
-/Temp/*.*
-*.exe
-/Features/*.cs
