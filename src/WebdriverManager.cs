@@ -14,6 +14,7 @@ using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.IE;
 using OpenQA.Selenium;
+using System.Security;
 
 namespace TFrengler.Selenium
 {
@@ -23,6 +24,7 @@ namespace TFrengler.Selenium
         private readonly DriverService[] DriverServices;
         private readonly string[] DriverNames;
         private readonly HttpClient HttpClient;
+        private bool IsDisposed = false;
 
         private readonly Dictionary<Browser, string> BrowserLatestVersionURLs;
 
@@ -45,7 +47,7 @@ namespace TFrengler.Selenium
             };
 
             if (!FileLocation.Exists)
-                throw new Exception("Unable to instantiate BrowserDriver. Directory with drivers does not exist: " + fileLocation.FullName);
+                throw new DirectoryNotFoundException("Unable to instantiate WebdriverManager. Directory with drivers does not exist: " + fileLocation.FullName);
         }
 
         /// <summary>
@@ -60,7 +62,7 @@ namespace TFrengler.Selenium
             bool RunningOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
             if (!RunningOnWindows && (browser == Browser.IE11 || browser == Browser.EDGE))
-                throw new Exception($"You are attempting to run the {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
+                throw new UnsupportedOSException($"You are attempting to run the {Enum.GetName(typeof(Browser), browser)} driver on a non-Windows OS ({RuntimeInformation.OSDescription})");
 
             string DriverName;
             lock (DriverNames.SyncRoot)
@@ -80,7 +82,7 @@ namespace TFrengler.Selenium
             if (!killExisting && Service != null)
             {
                 Dispose();
-                throw new Exception("Unable to start browser driver as it appears to already be running");
+                throw new WebdriverAlreadyRunningException("Unable to start browser driver as it appears to already be running");
             }
 
             if (killExisting && Service != null)
@@ -88,10 +90,10 @@ namespace TFrengler.Selenium
 
             var DriverExecutable = new FileInfo(FileLocation.FullName + "/" + DriverName);
             if (!DriverExecutable.Exists)
-                throw new Exception($"Cannot start browser driver - executable does not exist ({DriverExecutable.FullName})");
+                throw new FileNotFoundException($"Cannot start browser driver - executable does not exist ({DriverExecutable.FullName})");
 
             if (DriverExecutable.IsReadOnly)
-                throw new Exception($"Cannot start browser driver - executable is read-only ({DriverExecutable.FullName})");
+                throw new SecurityException($"Cannot start browser driver - executable is read-only ({DriverExecutable.FullName})");
 
             Service = browser switch
             {
@@ -99,7 +101,7 @@ namespace TFrengler.Selenium
                 Browser.FIREFOX => FirefoxDriverService.CreateDefaultService(FileLocation.FullName),
                 Browser.EDGE => EdgeDriverService.CreateDefaultService(FileLocation.FullName),
                 Browser.IE11 => InternetExplorerDriverService.CreateDefaultService(FileLocation.FullName),
-                _ => throw new NotImplementedException()
+                _ => throw new NotImplementedException("Fatal error - BROWSER enum not an expected value!")
             };
 
             if (port > 0) Service.Port = port;
@@ -149,7 +151,7 @@ namespace TFrengler.Selenium
             return false;
         }
 
-        // Webdriver download code
+        #region WEBDRIVER DOWNLOAD
 
         private string GetVersionFileName(Browser browser, Platform platform) => $"{DriverNames[(int)browser]}_{Enum.GetName(typeof(Platform), platform)}_version.txt";
         private long ParseVersionNumber(string version) => long.Parse(Regex.Replace(version, @"[a-zA-Z|\.]", ""));
@@ -161,16 +163,16 @@ namespace TFrengler.Selenium
         public string GetLatestWebdriverBinary(Browser browser, Platform platform, Architecture architecture)
         {
             if (browser == Browser.EDGE && platform == Platform.LINUX)
-                throw new Exception("Error fetching latest webdriver binary! Edge is not available on Linux");
+                throw new UnsupportedWebdriverConfigurationException("Error fetching latest webdriver binary! Edge is not available on Linux");
 
             if (browser == Browser.CHROME && platform == Platform.LINUX && architecture == Architecture.x86)
-                throw new Exception("Error fetching latest webdriver binary! Chrome on Linux only supports x64");
+                throw new UnsupportedWebdriverConfigurationException("Error fetching latest webdriver binary! Chrome on Linux only supports x64");
 
             if (browser == Browser.CHROME && platform == Platform.WINDOWS && architecture == Architecture.x64)
-                throw new Exception("Error fetching latest webdriver binary! Chrome on Linux only supports x86");
+                throw new UnsupportedWebdriverConfigurationException("Error fetching latest webdriver binary! Chrome on Linux only supports x86");
 
             if (browser == Browser.IE11)
-                throw new Exception("Error fetching latest webdriver binary! The IE11 driver is not supported for automatic downloading");
+                throw new UnsupportedWebdriverConfigurationException("Error fetching latest webdriver binary! The IE11 driver is not supported for automatic downloading");
 
             var VersionFile = new FileInfo(FileLocation.FullName + GetVersionFileName(browser, platform));
             string CurrentVersion = GetCurrentVersion(browser, platform);
@@ -297,7 +299,7 @@ namespace TFrengler.Selenium
             if (browser == Browser.FIREFOX)
             {
                 if (Response.StatusCode != HttpStatusCode.Redirect)
-                    throw new Exception($"Error downloading newest geckodriver: request didn't yield a 302 as expected ({URL})");
+                    throw new HttpRequestException($"Error downloading newest geckodriver: request didn't yield a 302 as expected ({URL})");
 
                 var FirefoxRequest = new HttpRequestMessage()
                 {
@@ -308,7 +310,10 @@ namespace TFrengler.Selenium
                 Response = HttpClient.SendAsync(FirefoxRequest).GetAwaiter().GetResult();
             }
 
-            Response.EnsureSuccessStatusCode();
+            if (!Response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Error downloading newest webdriver: URL didn't return a status indicating success | STATUS: {Enum.GetName(typeof(System.Net.HttpStatusCode), Response.StatusCode)} | URL: {URL} |");
+            }
 
             Stream ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
             var Buffer = new byte[ResponseStream.Length];
@@ -349,12 +354,19 @@ namespace TFrengler.Selenium
             // (over)Write the version file with the new version and delete the temporary, downloaded zip-file
             File.WriteAllText(Path.Combine(FileLocation.FullName, VersionFileName), version);
 
-            // if (RunningOnLinux)
-            // {
-            //     // Need to set read/write and execute permissions on Linux
-            //     fileSetAccessMode("#DriverFolder#/#WebdriverFileName#", "744");
-            //     fileSetAccessMode("#DriverFolder#/#VersionFileName#", "744");
-            // }
+            /* if (RunningOnLinux)
+            {
+                // Need to set read/write and execute permissions on Linux
+                var unixFileInfo = new Mono.Unix.UnixFileInfo("test.txt");
+                // set file permission to 644
+                unixFileInfo.FileAccessPermissions =
+                FileAccessPermissions.UserRead | FileAccessPermissions.UserWrite
+                | FileAccessPermissions.GroupRead
+                | FileAccessPermissions.OtherRead;
+
+                https://www.nuget.org/packages/Mono.Posix.NETStandard/1.0.0
+                https://stackoverflow.com/questions/45132081/file-permissions-on-linux-unix-with-net-core
+            } */
         }
 
         private void ExtractTarGz(byte[] tarGzData)
@@ -424,11 +436,16 @@ namespace TFrengler.Selenium
             }
         }
 
+        #endregion
+
         /// <summary>
         /// Shuts down all the running webdrivers and any browser instances that are open
         /// </summary>
         public void Dispose()
         {
+            if (IsDisposed) return;
+
+            IsDisposed = true;
             Stop(Browser.EDGE);
             Stop(Browser.FIREFOX);
             Stop(Browser.CHROME);

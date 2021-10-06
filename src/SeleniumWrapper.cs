@@ -35,6 +35,8 @@ namespace TFrengler.Selenium
         public ElementLocator GetElement {get; private set;}
         public ElementsLocator GetElements {get; private set;}
 
+        private bool IsDisposed = false;
+
         #region CONSTRUCTORS
 
         /// <summary>
@@ -144,7 +146,7 @@ namespace TFrengler.Selenium
                     return IEOptions;
 
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException("Fatal error - BROWSER enum not an expected value!");
             };
         }
 
@@ -153,7 +155,11 @@ namespace TFrengler.Selenium
         /// </summary>
         public void Dispose()
         {
-            if (Webdriver != null) Webdriver.Quit();
+            if (IsDisposed) return;
+            IsDisposed = true;
+
+            if (Webdriver != null)
+                Webdriver.Quit();
         }
     }
 }
