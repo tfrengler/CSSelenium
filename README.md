@@ -109,7 +109,7 @@ public string GetLatestWebdriverBinary(Selenium.Browser browser, Selenium.Platfo
 }
 ```
 
-It's worth noting that Edge is the legacy version (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 does not offer support for the new edge version, as far as I know anyway.
+It's worth noting that the version of Edge supported out of the box by Selenium is the legacy version, also called **EdgeHTML** (https://support.microsoft.com/en-us/microsoft-edge/what-is-microsoft-edge-legacy-3e779e55-4c55-08e6-ecc8-2333768c0fb0). Selenium v3 requires a bit of work to get Edge working properly which you can read about here: https://docs.microsoft.com/en-us/microsoft-edge/webdriver-chromium/?tabs=c-sharp
 
 Also worth noting is that IE is quirky and can be hard to get to cooperate. And it requires more work than simply starting the driver and interfacing with it via Selenium: https://github.com/SeleniumHQ/selenium/wiki/InternetExplorerDriver#required-configuration
 
