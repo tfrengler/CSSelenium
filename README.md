@@ -24,6 +24,8 @@ My name is Thomas and I'm a fairly experienced automation tester who has created
 
 Firefox on Linux may throw an error related to profiles (cannot be loaded or is inaccessible). It seems to have something to do with the profile.ini file being in the snap/mozilla/... folder but selenium tries to find it in the local/bin or usr/bin folders. I haven't been able to find a fix for this yet.
 
+On Linux the downloaded webdriver binaries will be non-executable. Still have to find a way programmatically to set the file permissions.
+
 **Disclaimers**
 - Constructive feedback is always welcome, though keep in mind this library was written by me, primarily for use by me, and thus it adheres very much to my principles of software architecture. 
 - This library is provided "as is". I have no roadmap for future features, and bugs will only be fixed when or if I have time for it.
@@ -38,11 +40,11 @@ Dependencies:
 1. Newtonsoft.Json.dll (10.0.3)
 1. WebDriver.dll (3.141.0)
 1. Webdriver.Support.dll (3.141.0)
+1. **OPTIONAL**: If you want support for Edge, you need an additional package to make it work properly for Selenium v3: Selenium Tools for Microsoft Edge (https://www.nuget.org/packages/Microsoft.Edge.SeleniumTools)
 
 Dependencies are all included in releases. If you build this yourself, well I presume you know what you are doing in that case and how to handle the files. The latter two DLL's are Selenium's so if your project already includes those then you can skip them.
 
-The whole thing _might_ work for earlier versions, and possibly .NET 5.0. However the Firefox driver has a [bug related to codepages](https://github.com/SeleniumHQ/selenium/issues/4816), and requires a very specific version of **System.Text.Encoding.CodePages** that I am not sure is supported by other .NET versions. If you aren't automating Firefox this isn't relevant then.
-
+The whole thing _might_ work for earlier versions, and possibly .NET 5.0. However the Firefox driver has a [bug related to codepages](https://github.com/SeleniumHQ/selenium/issues/4816), and requires a very specific version of **System.Text.Encoding.CodePages** that I am not sure is supported by other .NET versions. If you aren't automating Firefox then obviously this isn't relevant.
 
 ## Getting started
 
