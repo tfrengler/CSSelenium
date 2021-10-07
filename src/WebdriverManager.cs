@@ -24,9 +24,12 @@ namespace TFrengler.Selenium
         private readonly DriverService[] DriverServices;
         private readonly string[] DriverNames;
         private readonly HttpClient HttpClient;
+        private readonly Dictionary<Browser, string> BrowserLatestVersionURLs;
         private bool IsDisposed = false;
 
-        private readonly Dictionary<Browser, string> BrowserLatestVersionURLs;
+        // Utility methods
+        private string GetVersionFileName(Browser browser, Platform platform) => $"{DriverNames[(int)browser]}_{Enum.GetName(typeof(Platform), platform)}_version.txt";
+        private long ParseVersionNumber(string version) => long.Parse(Regex.Replace(version, @"[a-zA-Z|\.]", ""));
 
         /// <summary>
         /// Constructor
@@ -152,9 +155,6 @@ namespace TFrengler.Selenium
         }
 
         #region WEBDRIVER DOWNLOAD
-
-        private string GetVersionFileName(Browser browser, Platform platform) => $"{DriverNames[(int)browser]}_{Enum.GetName(typeof(Platform), platform)}_version.txt";
-        private long ParseVersionNumber(string version) => long.Parse(Regex.Replace(version, @"[a-zA-Z|\.]", ""));
 
         /// <summary>
         /// Downloads the latest webdriver binary for a given browser and platform if it's newer than the current version (or there is no current version)
