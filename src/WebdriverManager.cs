@@ -29,7 +29,7 @@ namespace TFrengler.Selenium
 
         // Utility methods
         private string GetVersionFileName(Browser browser, Platform platform) => $"{DriverNames[(int)browser]}_{Enum.GetName(typeof(Platform), platform)}_version.txt";
-        private long ParseVersionNumber(string version) => long.Parse(Regex.Replace(version, @"[a-zA-Z|\.]", ""));
+        private string ParseVersionNumber(string version) => Regex.Replace(version, @"[a-zA-Z]", "");
 
         /// <summary>
         /// Constructor
@@ -178,10 +178,10 @@ namespace TFrengler.Selenium
             string CurrentVersion = GetCurrentVersion(browser, platform);
             string LatestVersion = DetermineLatestAvailableVersion(browser);
 
-            string NormalizedCurrentVersion = CurrentVersion.PadRight(20, '0');
-            string NormalizedLatestVersion = LatestVersion.PadRight(20, '0');
+            int NormalizedLatestVersion = ParseVersionNumber(LatestVersion).Split('.', StringSplitOptions.RemoveEmptyEntries).Select(part=> Convert.ToInt32(part.PadRight(8, '0'))).Sum();
+            int NormalizedCurrentVersion = ParseVersionNumber(CurrentVersion).Split('.', StringSplitOptions.RemoveEmptyEntries).Select(part=> Convert.ToInt32(part.PadRight(8, '0'))).Sum();
 
-            if (ParseVersionNumber(NormalizedCurrentVersion) >= ParseVersionNumber(NormalizedLatestVersion))
+            if (NormalizedCurrentVersion >= NormalizedLatestVersion)
                 return $"The {Enum.GetName(typeof(Browser), browser)}-webdriver is already up to date, not downloading (Current: {CurrentVersion} | Latest: {LatestVersion})";
 
             Uri LatestWebdriverVersionURL = ResolveDownloadURL(LatestVersion, browser, platform, architecture);

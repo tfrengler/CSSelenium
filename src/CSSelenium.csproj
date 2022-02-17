@@ -4,10 +4,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>CSSelenium</AssemblyName>
-    <VersionPrefix>1.0.8</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Authors>Thomas Frengler</Authors>
-    <Copyright>Thomas Frengler @ 2021</Copyright>
+    <Copyright>Thomas Frengler @ 2022</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <AssemblyTitle>C# Selenium</AssemblyTitle>
     <Description>Simple C# Selenium wrapper, for getting up and running with a minimum of fuss</Description>

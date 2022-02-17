@@ -86,7 +86,7 @@ namespace Tests
 
         #region TESTS: Start
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Chrome_Standard()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -101,7 +101,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Firefox_Standard()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -116,7 +116,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test, Ignore("Not possible currently")]
+        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
         public void Start_Edge_Standard()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -134,7 +134,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Chrome_AlreadyRunning_KillExisting()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -150,7 +150,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Chrome_AlreadyRunning_NoKillingExisting()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -164,7 +164,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Chrome_DifferentPort()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -197,7 +197,7 @@ namespace Tests
 
         #region TESTS: IsRunning
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Chrome_IsRunning()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -212,7 +212,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Firefox_IsRunning()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -227,7 +227,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test, Ignore("Not currently possible")]
+        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
         public void Edge_IsRunning()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -249,7 +249,7 @@ namespace Tests
 
         #region TESTS: Stop
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Chrome_Stop()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -264,7 +264,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="StaticDrivers")]
         public void Firefox_Stop()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -279,7 +279,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test, Ignore("Not currently possible")]
+        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
         public void Edge_Stop()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -301,7 +301,7 @@ namespace Tests
 
         #region TESTS: DetermineLatestAvailableVersion
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -309,7 +309,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -317,7 +317,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new WebdriverManager(TempStaticBrowserDriverFolder);
@@ -406,55 +406,55 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.CHROME);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.FIREFOX);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.EDGE);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.CHROME);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.FIREFOX);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.EDGE);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.CHROME);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.FIREFOX);
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.EDGE);
@@ -464,7 +464,7 @@ namespace Tests
 
         #region TESTS: GetLatestWebdriverBinary
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetLatestWebdriverBinary_OK_Windows()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -478,7 +478,7 @@ namespace Tests
             Assert.IsTrue( VersionFile.Exists );
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetLatestWebdriverBinary_OK_Linux()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -492,7 +492,7 @@ namespace Tests
             Assert.IsTrue( VersionFile.Exists );
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetLatestWebdriverBinary_OK_Windows()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -506,7 +506,7 @@ namespace Tests
             Assert.IsTrue( VersionFile.Exists );
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetLatestWebdriverBinary_OK_Linux()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -520,7 +520,7 @@ namespace Tests
             Assert.IsTrue( VersionFile.Exists );
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_GetLatestWebdriverBinary_OK()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -534,7 +534,7 @@ namespace Tests
             Assert.IsTrue( VersionFile.Exists );
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Edge_GetLatestWebdriverBinary_NOK()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -545,7 +545,7 @@ namespace Tests
             });
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetLatestWebdriverBinary_NOK()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
@@ -561,7 +561,7 @@ namespace Tests
             });
         }
 
-        [Test]
+        [TestCase(Category="DownloadDrivers")]
         public void IE11_GetLatestWebdriverBinary_NOK()
         {
             var WebdriverManager = new WebdriverManager(TempBrowserDriverDownloadFolder);
