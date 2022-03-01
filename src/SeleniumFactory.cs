@@ -8,6 +8,7 @@ using OpenQA.Selenium.Remote;
 
 namespace TFrengler.CSSelenium
 {
+    /// <summary>The bootstrapper class for creating a Selenium webdriver-instance representing a specific browser</summary>
     public static class SeleniumFactory
     {
         /// <summary>

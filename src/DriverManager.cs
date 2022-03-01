@@ -16,23 +16,51 @@ using OpenQA.Selenium;
 using System.Security;
 using System.Xml.Linq;
 using System.Net.Http.Headers;
+using Mono.Unix;
+using SharpCompress.Readers;
+using SharpCompress.Common;
 
 namespace TFrengler.CSSelenium
 {
-    public struct UpdateResponse
+    /// <summary>Represents the status of attempting to update a browser-driver</summary>
+    public readonly struct UpdateResponse
     {
-        public bool Updated { get; set; }
-        public string OldVersion { get; set; }
-        public string NewVersion { get; set; }
-        public Exception Error { get; set; }
+        public UpdateResponse(bool updated, string oldVersion, string newVersion)
+        {
+            Updated = updated;
+            OldVersion = oldVersion;
+            NewVersion = newVersion;
+        }
+
+        /// <summary>True if the driver was updated, false if not</summary>
+        public bool Updated { get; }
+        /// <summary>The version of the driver binary before it was updated. Is "0" if the driver binary didn't exist</summary>
+        public string OldVersion { get; }
+        /// <summary>The version of the driver binary after it was updated. Is empty if Updated is false</summary>
+        public string NewVersion { get; }
     }
 
-    /// <summary>Class that can manage webdriver lifetimes as well as update them to desired versions</summary>
+    /// <summary>Represents version info about a given browser driver</summary>
+    public readonly struct VersionInfo
+    {
+        public VersionInfo(uint normalized, string readable)
+        {
+            Normalized = normalized;
+            Readable = readable;
+        }
+
+        /// <summary>The normalized (summed up) version number, used for comparison between versions</summary>
+        public uint Normalized { get; }
+        /// <summary>The UI-friendly string version of the version</summary>
+        public string Readable { get; }
+    }
+
+    /// <summary>Utility class for managing the driver lifetimes and also facilitatates auto-updating the various driver binaries to the latest or a specific version</summary>
     public sealed class DriverManager : IDisposable
     {
         private sealed class HttpResponse
         {
-            public HttpResponse(HttpStatusCode statusCode, HttpResponseHeaders headers, byte[] content)
+            public HttpResponse(HttpStatusCode statusCode, HttpResponseHeaders headers, MemoryStream content)
             {
                 StatusCode = statusCode;
                 Headers = headers;
@@ -41,7 +69,7 @@ namespace TFrengler.CSSelenium
 
             public HttpStatusCode StatusCode {get;}
             public HttpResponseHeaders Headers {get;}
-            public byte[] Content {get;}
+            public MemoryStream Content {get;}
         }
 
         private readonly DirectoryInfo FileLocation;
@@ -58,16 +86,13 @@ namespace TFrengler.CSSelenium
         private const string FIREFOX_VERSION_URL = "https://github.com/mozilla/geckodriver/releases?q=0.";
 
         // Utility methods
-        private string GetVersionFileName(Browser browser, Platform platform, Architecture architecture) => $"{GetBrowserName(browser)}_{GetPlatformName(platform)}_{GetArchitectureName(architecture)}";
+        private string GetVersionFileName(Browser browser, Platform platform) => $"{GetBrowserName(browser)}_{GetPlatformName(platform)}";
         private string CleanVersionString(string version) => Regex.Replace(version, @"[a-zA-Z]", "");
         private string GetBrowserName(Browser browser) => Enum.GetName(typeof(Browser), browser);
         private string GetPlatformName(Platform platform) => Enum.GetName(typeof(Platform), platform);
         private string GetArchitectureName(Architecture architecture) => Enum.GetName(typeof(Architecture), architecture);
         private uint NormalizeVersion(string version) => (uint)CleanVersionString(version).Split('.', StringSplitOptions.RemoveEmptyEntries).Select(part => Convert.ToInt32(part.Trim())).Sum();
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
         /// <param name="fileLocation">The folder where the webdriver executables are. Note that the original file names of the webdrivers are expected! (chromedriver, geckodriver etc). If you plan on using the auto-update functionality this folder has to be writeable as well!</param>
         public DriverManager(DirectoryInfo fileLocation)
         {
@@ -190,7 +215,7 @@ namespace TFrengler.CSSelenium
             return false;
         }
 
-        /// <summary>Deletes all files in the driver-folder as well as recreates the temp-folder</summary>
+        /// <summary>Deletes all files in the driver-folder and removes the temp-folder</summary>
         public void Reset()
         {
             FileLocation.Refresh();
@@ -200,14 +225,26 @@ namespace TFrengler.CSSelenium
                 CurrentFile.Delete();
             }
 
-            TempFolder.Delete(true);
-            TempFolder.Refresh();
+            if (TempFolder.Exists)
+            {
+                TempFolder.Delete(true);
+                TempFolder.Refresh();
+            }
+
             TempFolder.Create();
         }
 
-        /// <summary>
-        /// Shuts down all the running drivers along with any open browser windows belonging to those drivers
-        /// </summary>
+        /// <summary>Deletes the temp-folder</summary>
+        public void ResetTemp()
+        {
+            if (TempFolder.Exists)
+            {
+                TempFolder.Delete(true);
+                TempFolder.Refresh();
+            }
+        }
+
+        /// <summary>Shuts down all the running drivers along with any open browser windows belonging to those drivers</summary>
         public void Dispose()
         {
             if (IsDisposed) return;
@@ -236,109 +273,71 @@ namespace TFrengler.CSSelenium
         {
             if (browser == Browser.EDGE && platform == Platform.LINUX)
             {
-                return new UpdateResponse()
-                {
-                    Updated = false,
-                    OldVersion = "",
-                    NewVersion = "",
-                    Error = new UnsupportedWebdriverConfigurationException("Edge is not available on Linux")
-                };
+                throw new UnsupportedWebdriverConfigurationException("Edge is not available on Linux");
             }
 
             if (browser == Browser.CHROME && platform == Platform.LINUX && architecture == Architecture.x86)
             {
-                return new UpdateResponse()
-                {
-                    Updated = false,
-                    OldVersion = "",
-                    NewVersion = "",
-                    Error = new UnsupportedWebdriverConfigurationException("Chrome on Linux only has x64 driver available")
-                };
+                throw new UnsupportedWebdriverConfigurationException("Chrome on Linux only has x64 driver available");
             }
 
             if (browser == Browser.CHROME && platform == Platform.WINDOWS && architecture == Architecture.x64)
             {
-                return new UpdateResponse()
-                {
-                    Updated = false,
-                    OldVersion = "",
-                    NewVersion = "",
-                    Error = new UnsupportedWebdriverConfigurationException("Chrome on Windows only has x86 driver available")
-                };
+                throw new UnsupportedWebdriverConfigurationException("Chrome on Windows only has x86 driver available");
             }
 
-            var VersionFile = new FileInfo(FileLocation.FullName + GetVersionFileName(browser, platform, architecture));
-            string CurrentVersion = GetCurrentVersion(browser, platform, architecture);
-            Tuple<uint, string, Exception> DesiredVersionCall;
+            string CurrentVersion = GetCurrentVersion(browser, platform);
+            VersionInfo DesiredVersionInfo;
 
             if (version == 0)
             {
-                DesiredVersionCall = DetermineLatestVersion(browser);
+                DesiredVersionInfo = DetermineLatestVersion(browser);
             }
             else
             {
-                DesiredVersionCall = browser switch
+                DesiredVersionInfo = browser switch
                 {
                     Browser.CHROME => DetermineAvailableVersionChrome(version),
                     Browser.EDGE => DetermineAvailableVersionEdge(version),
-                    Browser.FIREFOX => DetermineAvailableVersionFirefox(version)
+                    Browser.FIREFOX => DetermineAvailableVersionFirefox(version),
+                    _ => throw new NotImplementedException("FATAL ERROR!!!")
                 };
             }
 
-            if (DesiredVersionCall.Item3 != null)
+            if (DesiredVersionInfo.Normalized == NormalizeVersion(CurrentVersion))
             {
-                return new UpdateResponse()
-                {
-                    Updated = false,
-                    OldVersion = CurrentVersion,
-                    NewVersion = "",
-                    Error = DesiredVersionCall.Item3
-                };
-            }
-
-            uint DesiredVersion = DesiredVersionCall.Item1;
-            uint NormalizedCurrentVersion = NormalizeVersion(CurrentVersion);
-
-            if (NormalizedCurrentVersion == DesiredVersion)
-            {
-                return new UpdateResponse()
-                {
-                    Updated = false,
-                    OldVersion = CurrentVersion,
-                    NewVersion = DesiredVersionCall.Item2
-                };
-            }
+                return new UpdateResponse(false, CurrentVersion, DesiredVersionInfo.Readable);
+            };
 
             if (!TempFolder.Exists)
             {
                 TempFolder.Create();
             }
 
-            Uri DesiredVersionURL = ResolveDownloadURL(DesiredVersionCall.Item2, browser, platform, architecture);
-            DownloadAndExtract(DesiredVersionURL, browser, platform, DesiredVersionCall.Item2);
+            Uri DesiredVersionURL = ResolveDownloadURL(DesiredVersionInfo.Readable, browser, platform, architecture);
+            DownloadAndExtract(DesiredVersionURL, browser, platform, architecture, DesiredVersionInfo.Readable);
 
-            return new UpdateResponse()
-            {
-                Updated = true,
-                OldVersion = CurrentVersion,
-                NewVersion = DesiredVersionCall.Item2
-            };
+            return new UpdateResponse(true, CurrentVersion, DesiredVersionInfo.Readable);
         }
 
-        /// <summary>
-        /// Retrieves the current version if a given webdriver for a given platform and architecture
-        /// </summary>
+        /// <summary>Retrieves the current version of the driver for a given browser, platform and architecture</summary>
         /// <returns>The current version if both the webdriver and the version file exists, otherwise "0"</returns>
-        public string GetCurrentVersion(Browser browser, Platform platform, Architecture architecture)
+        public string GetCurrentVersion(Browser browser, Platform platform)
         {
-            var VersionFile = new FileInfo(Path.Combine(FileLocation.FullName, GetVersionFileName(browser, platform, architecture)));
+            var VersionFile = new FileInfo(Path.Combine(FileLocation.FullName, GetVersionFileName(browser, platform)));
 
             string DriverName = DriverNames[(int)browser];
             if (platform == Platform.WINDOWS) DriverName = DriverName + ".exe";
             var WebdriverFile = new FileInfo(Path.Combine(FileLocation.FullName, DriverName));
 
             if (WebdriverFile.Exists && VersionFile.Exists)
-                return File.ReadAllText(VersionFile.FullName);
+            {
+                using (FileStream File = new FileStream(VersionFile.FullName, FileMode.Open, FileAccess.Read))
+                using (StreamReader Reader = new StreamReader(File))
+                {
+                    return Reader.ReadToEnd();
+                }
+            }
 
             return "0";
         }
@@ -347,7 +346,7 @@ namespace TFrengler.CSSelenium
         /// Attempts to determines and retrieve the latest available version of the webdriver for the given browser
         /// </summary>
         /// <returns>A string representing the latest available version of the webdriver for a given browser</returns>
-        public Tuple<uint, string, Exception> DetermineLatestVersion(Browser browser)
+        public VersionInfo DetermineLatestVersion(Browser browser)
         {
             var URL = new Uri(BrowserLatestVersionURLs[browser]);
             HttpResponse Response = MakeRequest(URL);
@@ -361,97 +360,91 @@ namespace TFrengler.CSSelenium
 
                 if (StringVersion == null)
                 {
-                    Error = new HttpRequestException($"Location-header absent in HTTP response to determine latest FIREFOX driver version ({URL.AbsolutePath})");
+                    Error = new HttpRequestException($"Location-header absent in HTTP response to determine latest FIREFOX-driver version ({URL.AbsolutePath})");
                 }
 
-                return new Tuple<uint, string, Exception>(NormalizedVersion, StringVersion, Error);
+                return new VersionInfo(NormalizedVersion, StringVersion);
             }
 
             if (Response.Content == null)
             {
-                return new Tuple<uint, string, Exception>(0, null, new HttpRequestException($"HTTP-response from call to determine latest {GetBrowserName(browser)} driver version contained no body ({URL.AbsolutePath})"));
+                throw new HttpRequestException($"HTTP-response from call to determine latest {GetBrowserName(browser)}-driver version contained no body ({URL.AbsolutePath})");
             }
 
-            string VersionString = Encoding.UTF8.GetString(Response.Content);
-            return new Tuple<uint, string, Exception>(NormalizeVersion(VersionString), VersionString, null);
+            string VersionString = new StreamReader(Response.Content).ReadToEnd().Trim();
+            return new VersionInfo(NormalizeVersion(VersionString), VersionString);
         }
 
         #region PRIVATE
 
-        private Tuple<uint, string, Exception> DetermineAvailableVersionEdge(uint version)
+        private VersionInfo DetermineAvailableVersionEdge(uint version)
         {
             var URL = new Uri(EDGE_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
 
             if (Response.Content == null)
             {
-                return new Tuple<string, Exception>("", new HttpRequestException($"HTTP-response from call to determine specific EDGE-driver version contained no body ({URL.AbsolutePath})"));
+                throw new HttpRequestException($"HTTP-response from call to determine specific EDGE-driver version contained no body ({URL.AbsolutePath})");
             }
 
-            string StringContent = Encoding.UTF8.GetString(Response.Content);
+            string StringContent = new StreamReader(Response.Content).ReadToEnd().Trim();
             XDocument AvailableEdgeVersionsXML;
 
-            try
-            {
-                AvailableEdgeVersionsXML = XDocument.Parse(StringContent);
-            }
-            catch(System.Xml.XmlException error)
-            {
-                return new Tuple<string, Exception>(null, error);
-            }
-
+            AvailableEdgeVersionsXML = XDocument.Parse(StringContent);
             IEnumerable<XElement> AvailableVersions = AvailableEdgeVersionsXML.Descendants("Name");
 
             if (AvailableVersions.Count() == 0)
             {
-                return new Tuple<string, Exception>(null, new UnavailableVersionException(Browser.EDGE, version));
+                throw new UnavailableVersionException(Browser.EDGE, version);
             }
 
             string DesiredMajorRevision = Convert.ToString(version);
             IEnumerable<string> ParsedVersions = AvailableVersions.Select(element=> element.Value.Split('/', StringSplitOptions.None)[0]);
-            IEnumerable<int> NormalizedVersions = ParsedVersions.Select(tag=> NormalizeVersion(tag));
-            int LatestIndex = Array.IndexOf(NormalizedVersions.ToArray(), NormalizedVersions.Max());
-            string LatestVersion = ParsedVersions.ElementAt(LatestIndex);
+            IEnumerable<uint> NormalizedVersions = ParsedVersions.Select(tag=> NormalizeVersion(tag));
 
-            return new Tuple<string, Exception>(LatestVersion, null);
+            uint LatestVersionNormalized = NormalizedVersions.Max();
+            int LatestIndex = Array.IndexOf(NormalizedVersions.ToArray(), LatestVersionNormalized);
+            string LatestVersionString = ParsedVersions.ElementAt(LatestIndex);
+
+            return new VersionInfo(LatestVersionNormalized, LatestVersionString);
         }
 
-        private Tuple<uint, string, Exception> DetermineAvailableVersionChrome(uint version)
+        private VersionInfo DetermineAvailableVersionChrome(uint version)
         {
             var URL = new Uri(CHROME_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
 
             if (Response.StatusCode == HttpStatusCode.NotFound)
             {
-                return new Tuple<string, Exception>(null, new UnavailableVersionException(Browser.CHROME, version));
+                throw new UnavailableVersionException(Browser.CHROME, version);
             }
 
             if (Response.Content == null)
             {
-                return new Tuple<string, Exception>("", new HttpRequestException($"HTTP-response from call to determine specific CHROME-driver version contained no body ({URL.AbsolutePath})"));
+                throw new HttpRequestException($"HTTP-response from call to determine specific CHROME-driver version contained no body ({URL.AbsolutePath})");
             }
 
-            string StringContent = Encoding.UTF8.GetString(Response.Content);
-            return new Tuple<string, Exception>(StringContent, null);
+            string StringContent = new StreamReader(Response.Content).ReadToEnd().Trim();
+            return new VersionInfo( NormalizeVersion(StringContent), StringContent );
         }
 
-        private Tuple<uint, string, Exception> DetermineAvailableVersionFirefox(uint version)
+        private VersionInfo DetermineAvailableVersionFirefox(uint version)
         {
             var URL = new Uri(FIREFOX_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
 
             if (Response.Content == null)
             {
-                return new Tuple<string, Exception>("", new HttpRequestException($"HTTP-response from call to determine specific FIREFOX-driver version contained no body ({URL.AbsolutePath})"));
+                throw new HttpRequestException($"HTTP-response from call to determine specific FIREFOX-driver version contained no body ({URL.AbsolutePath})");
             }
 
-            string StringContent = Encoding.UTF8.GetString(Response.Content);
+            string StringContent = new StreamReader(Response.Content).ReadToEnd().Trim();
             var TagPattern = new Regex("<a href=\"/mozilla/geckodriver/releases/tag/v(\\d+.\\d+.\\d+)\"");
             MatchCollection Matches = TagPattern.Matches(StringContent);
 
             if (Matches.Count == 0)
             {
-                return new Tuple<string, Exception>(null, new UnavailableVersionException(Browser.FIREFOX, version));
+                throw new UnavailableVersionException(Browser.FIREFOX, version);
             }
 
             string[] Tags = new string[Matches.Count];
@@ -463,11 +456,13 @@ namespace TFrengler.CSSelenium
 
             string DesiredMajorRevision = Convert.ToString(version);
             IEnumerable<string> FilteredTags = Tags.Where(tag=> tag.Split('.', StringSplitOptions.None)[1] == DesiredMajorRevision);
-            IEnumerable<int> NormalizedTags = FilteredTags.Select(tag=> NormalizeVersion(tag));
-            int LatestIndex = Array.IndexOf(NormalizedTags.ToArray(), NormalizedTags.Max());
-            string LatestVersion = FilteredTags.ElementAt(LatestIndex);
+            IEnumerable<uint> NormalizedTags = FilteredTags.Select(tag=> NormalizeVersion(tag));
 
-            return new Tuple<string, Exception>("v" + LatestVersion, null);
+            uint LatestVersionNormalized = NormalizedTags.Max();
+            int LatestIndex = Array.IndexOf(NormalizedTags.ToArray(), LatestVersionNormalized);
+            string LatestVersionString = FilteredTags.ElementAt(LatestIndex);
+
+            return new VersionInfo(LatestVersionNormalized, LatestVersionString);
         }
 
         private Uri ResolveDownloadURL(string version, Browser browser, Platform platform, Architecture architecture)
@@ -518,90 +513,62 @@ namespace TFrengler.CSSelenium
         private void DownloadAndExtract(Uri URL, Browser browser, Platform platform, Architecture architecture, string version)
         {
             string DownloadedFileName = URL.ToString().Split('/').Last();
-            FileInfo DownloadedPathAndFile = new FileInfo(Path.GetTempPath() + DownloadedFileName);
             string VersionFileName = GetVersionFileName(browser, platform);
+            string DriverFileName = DriverNames[(int)browser];
 
-            var Request = new HttpRequestMessage()
-            {
-                RequestUri = URL,
-                Method = HttpMethod.Get
-            };
+            if (platform == Platform.WINDOWS)
+                DriverFileName = DriverFileName + ".exe";
 
-            var CancellationTokenSource = new CancellationTokenSource(60000);
-            HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
+            FileInfo DriverFileFinal = new FileInfo(Path.Combine(FileLocation.FullName, DriverFileName));
+            FileInfo DownloadedArchive = new FileInfo(Path.Combine(TempFolder.FullName, DownloadedFileName));
+            FileInfo DriverFileTemp = new FileInfo(Path.Combine(TempFolder.FullName, DriverFileName));
 
+            HttpResponse Response = MakeRequest(URL);
             // Need to do a second download for Firefox due to the redirect
             if (browser == Browser.FIREFOX)
             {
                 if (Response.StatusCode != HttpStatusCode.Redirect)
-                    throw new HttpRequestException($"Error downloading newest geckodriver: request didn't yield a 302 as expected ({URL})");
-
-                var FirefoxRequest = new HttpRequestMessage()
                 {
-                    RequestUri = Response.Headers.Location,
-                    Method = HttpMethod.Get
-                };
+                    throw new HttpRequestException($"Error downloading latest FIREFOX-driver: request didn't yield a 302 as expected ({URL})");
+                }
 
-                Response = HttpClient.SendAsync(FirefoxRequest).GetAwaiter().GetResult();
+                Response = MakeRequest(Response.Headers.Location);
             }
 
-            if (!Response.IsSuccessStatusCode)
+            if (Response.StatusCode != HttpStatusCode.OK)
             {
-                throw new HttpRequestException($"Error downloading newest webdriver: URL didn't return a status indicating success | STATUS: {Enum.GetName(typeof(System.Net.HttpStatusCode), Response.StatusCode)} | URL: {URL} |");
+                throw new HttpRequestException($"Error downloading latest {GetBrowserName(browser)}-driver: URL didn't return a status indicating success | STATUS: {Enum.GetName(typeof(System.Net.HttpStatusCode), Response.StatusCode)} | URL: {URL} |");
             }
 
-            Stream ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
-            var Buffer = new byte[ResponseStream.Length];
-
-            using (var StreamReader = new StreamReader(ResponseStream))
+            // Write the downloaded file to disk (temp location) and then extract the zip, and copy the binary to the "normal" folder
+            using (FileStream File = new FileStream(DownloadedArchive.FullName, FileMode.Create, FileAccess.ReadWrite))
             {
-                ResponseStream.Read(Buffer, 0, (int)ResponseStream.Length);
+                File.Write(Response.Content.ToArray());
+                File.Position = 0;
+
+                ExtractArchive(TempFolder, File);
             }
 
-            if (browser == Browser.FIREFOX && platform == Platform.LINUX)
-            {
-                ExtractTarGz(Buffer);
-            }
-            else
-            {
-                string ExtractedFileName = DriverNames[(int)browser];
-                if (platform == Platform.WINDOWS) ExtractedFileName = ExtractedFileName + ".exe";
+            File.Copy(DriverFileTemp.FullName, DriverFileFinal.FullName, true);
+            // Clean-up, remove the extracted file from the temp folder
+            DriverFileTemp.Delete();
 
-                var ExtractedFileNameAndPath = new FileInfo(Path.GetTempPath() + ExtractedFileName);
-                // Of course the Edge-zip contains a silly, extra folder and not just the driver binary...
-                var ExtraFolder = new DirectoryInfo(Path.GetTempPath() + "Driver_Notes");
-
-                // Deleting the file (and extra folders...) in case they exist or ZipFile.ExtractToDirectory will throw an exception
-                if (browser == Browser.EDGE && ExtraFolder.Exists) ExtraFolder.Delete(true);
-                ExtractedFileNameAndPath.Delete();
-
-                // Write the downloaded file to disk (temp location) and then extract the zip, and copy the binary
-                File.WriteAllBytes(DownloadedPathAndFile.FullName, Buffer);
-                ZipFile.ExtractToDirectory(DownloadedPathAndFile.FullName, Path.GetTempPath());
-                File.Copy(ExtractedFileNameAndPath.FullName, Path.Combine(FileLocation.FullName, ExtractedFileName), true);
-
-                // Clean-up, remove the extracted binaries from the temp folder (and Edge's extra folder)
-                DownloadedPathAndFile.Delete();
-                ExtractedFileNameAndPath.Delete();
-                if (browser == Browser.EDGE && ExtraFolder.Exists) ExtraFolder.Delete(true);
-            }
-
-            // (over)Write the version file with the new version and delete the temporary, downloaded zip-file
-            File.WriteAllText(Path.Combine(FileLocation.FullName, VersionFileName), version);
-
-            /* if (RunningOnLinux)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 // Need to set read/write and execute permissions on Linux
-                var unixFileInfo = new Mono.Unix.UnixFileInfo("test.txt");
-                // set file permission to 644
-                unixFileInfo.FileAccessPermissions =
-                FileAccessPermissions.UserRead | FileAccessPermissions.UserWrite
-                | FileAccessPermissions.GroupRead
-                | FileAccessPermissions.OtherRead;
+                var UnixFileInfo = new Mono.Unix.UnixFileInfo(DriverFileFinal.FullName);
+                // Set file permission to 644
+                UnixFileInfo.FileAccessPermissions = FileAccessPermissions.UserRead | FileAccessPermissions.UserWrite | FileAccessPermissions.GroupRead | FileAccessPermissions.OtherRead;
+                //https://www.nuget.org/packages/Mono.Posix.NETStandard/1.0.0
+                //https://stackoverflow.com/questions/45132081/file-permissions-on-linux-unix-with-net-core
+            }
 
-                https://www.nuget.org/packages/Mono.Posix.NETStandard/1.0.0
-                https://stackoverflow.com/questions/45132081/file-permissions-on-linux-unix-with-net-core
-            } */
+            // (over)Write the version file with the new version
+            using (FileStream File = new FileStream(Path.Combine(FileLocation.FullName, VersionFileName), FileMode.Create, FileAccess.Write))
+            using (StreamWriter Writer = new StreamWriter(File))
+            {
+                Writer.Write(version);
+            }
         }
 
         private HttpResponse MakeRequest(Uri uri)
@@ -612,102 +579,38 @@ namespace TFrengler.CSSelenium
                 RequestUri = uri
             };
 
-            var CancellationTokenSource = new CancellationTokenSource(10000);
+            var CancellationTokenSource = new CancellationTokenSource(30000);
             HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
             Stream ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
 
-            byte[] Buffer = null;
+            var Buffer = new MemoryStream();
             if (ResponseStream != null)
             {
-                Buffer = new byte[ResponseStream.Length];
-                using (var StreamReader = new StreamReader(ResponseStream))
-                {
-                    ResponseStream.Read(Buffer, 0, (int)ResponseStream.Length);
-                }
+                ResponseStream.CopyTo(Buffer);
+                Buffer.Position = 0;
             }
 
             return new HttpResponse(Response.StatusCode, Response.Headers, Buffer);
         }
 
-        private void ExtractTarGz(byte[] tarGzData)
+        private List<FileInfo> ExtractArchive(DirectoryInfo outputDir, Stream input)
         {
-            var DecompressedFileStream = new MemoryStream();
-            GZipStream DecompressionStream = new GZipStream(new MemoryStream(tarGzData), CompressionMode.Decompress);
+            var ReturnData = new List<FileInfo>();
+            var Reader = ReaderFactory.Open(input);
 
-            int ChunkSize = 4096;
-            int Read = ChunkSize;
-            byte[] ReadBuffer = new byte[ChunkSize];
-
-            while (Read == ChunkSize)
+            while (Reader.MoveToNextEntry())
             {
-                Read = DecompressionStream.Read(ReadBuffer, 0, ChunkSize);
-                DecompressedFileStream.Write(ReadBuffer, 0, Read);
-            }
-
-            DecompressedFileStream.Seek(0, SeekOrigin.Begin);
-            ExtractTar(DecompressedFileStream);
-
-            DecompressionStream.Dispose();
-            DecompressedFileStream.Dispose();
-        }
-
-        // https://gist.github.com/ForeverZer0/a2cd292bd2f3b5e114956c00bb6e872b
-        private void ExtractTar(Stream tarStream)
-        {
-            var ReadBuffer = new byte[100];
-
-            while (true)
-            {
-                tarStream.Read(ReadBuffer, 0, 100);
-                string Name = Encoding.ASCII.GetString(ReadBuffer).Trim('\0');
-
-                if (String.IsNullOrWhiteSpace(Name))
-                    break;
-
-                tarStream.Seek(24, SeekOrigin.Current);
-                tarStream.Read(ReadBuffer, 0, 12);
-                Int64 Size = Convert.ToInt64(Encoding.UTF8.GetString(ReadBuffer, 0, 12).Trim('\0').Trim(), 8);
-
-                tarStream.Seek(376L, SeekOrigin.Current);
-                string Output = Path.Combine(TempFolder.FullName, Name);
-
-                // Get the directory part of the output and create the folder if it doesn't exist
-                if (!Directory.Exists(Path.GetDirectoryName(Output)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(Output));
-
-                // Is a directory? If not then it's a file and we'll extract it
-                if (!Name.EndsWith("/"))
+                if (!Reader.Entry.IsDirectory)
                 {
-                    using (FileStream FileOutputStream = File.Open(Output, FileMode.OpenOrCreate, FileAccess.Write))
-                    {
-                        var OutputBuffer = new byte[Size];
-                        tarStream.Read(OutputBuffer, 0, OutputBuffer.Length);
-                        FileOutputStream.Write(OutputBuffer, 0, OutputBuffer.Length);
-                    }
+                    Reader.WriteEntryToDirectory(outputDir.FullName, new ExtractionOptions() { ExtractFullPath = false, Overwrite = true });
+                    ReturnData.Add( new FileInfo(Path.Combine(outputDir.FullName, Reader.Entry.Key)) );
                 }
-
-                Int64 Position = tarStream.Position;
-                Int64 Offset = 512 - (Position % 512);
-
-                if (Offset == 512)
-                    Offset = 0;
-
-                tarStream.Seek(Offset, SeekOrigin.Current);
             }
+
+            return ReturnData;
         }
 
         #endregion
         #endregion
     }
 }
-
-/*
-    List edgedrivers by major revisions
-    https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver?comp=list&prefix=100
-
-    List chromedriver by major revisions
-    https://chromedriver.storage.googleapis.com/LATEST_RELEASE_XX where XX is the number
-
-    List geckodriver by major revisions
-    https://github.com/mozilla/geckodriver/releases?q=0.25&expanded=false
-*/

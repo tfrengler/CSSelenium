@@ -1,3 +1,9 @@
+
+#r "C:/Dev/Projects/CSSelenium/src/bin/Debug/net5.0/CSSelenium.dll"
+#r "C:\Users\thoma\.nuget\packages\selenium.webdriver\4.1.0\lib\net5.0\WebDriver.dll"
+#r "C:\Users\thoma\.nuget\packages\mono.posix.netstandard\1.0.0\ref\netstandard2.0\Mono.Posix.NETStandard.dll"
+#r "C:\Users\thoma\.nuget\packages\sharpcompress\0.30.1\lib\net5.0\SharpCompress.dll"
+
 using System.IO;
 using System.Reflection;
 using System.Linq;
@@ -9,77 +15,66 @@ using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Net;
 using System.Xml.Linq;
+using TFrengler.CSSelenium;
 
-// string Cookie = File.ReadAllText("C:/Temp/cookie.txt");
-
-var Client = new HttpClient(
-    new HttpClientHandler()
-    {
-        AllowAutoRedirect = true,
-        // ClientCertificateOptions = ClientCertificateOption.Manual,
-        // ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
-        // {
-        //     return true;
-        // }
-    }
-);
-
-var Request = new HttpRequestMessage()
-{
-    Method = HttpMethod.Get,
-    RequestUri = new Uri("https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver?comp=list&prefix=98") // new Uri("https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver/LATEST_STABLE")
-};
-
-Request.Headers.Add("User-Agent", "CSSelenium DriverManager");
-// Request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0");
-// Request.Headers.Add("Host", "dev.azure.com");
-// Request.Headers.Add("Cookie", Cookie);
-
-HttpResponseMessage Response;
-StreamReader Reader;
-string Contents;
+DriverManager DriverManager;
 
 try {
-    // Response = await Client.SendAsync(Request);
-    // WriteLine("RESPONSE STATUS: " + Enum.GetName(typeof(HttpStatusCode), Response.StatusCode));
-    // WriteLine("RESPONSE Content Type: " + Response.Content.Headers.ContentType);
-    // WriteLine("RESPONSE Content Length: " + Response.Content.Headers.ContentLength);
+    DriverManager = new DriverManager( new DirectoryInfo("C:/Temp/DownloadedWebdrivers/") );
+    DriverManager.Reset();
 
-    // Reader = new StreamReader(Response.Content.ReadAsStream());
-    // Contents = await Reader.ReadToEndAsync();
+    UpdateResponse UpdateResult;
 
-    var XML = XDocument.Parse("gargle");
-    var Elements = XML.Descendants("Name");
+    Console.WriteLine("-------CHROME / WINDOWS-------");
+    UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 0);
+    Console.WriteLine("Updated: " + UpdateResult.Updated);
+    Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
-    // string DesiredMajorRevision = Convert.ToString(100);
-    // var ParsedVersions = Elements.Select(element=> element.Value.Split('/', StringSplitOptions.None)[0]);
-    // IEnumerable<int> NormalizedVersions = ParsedVersions.Select(tag=> tag.Split('.', StringSplitOptions.None).Select(part => Convert.ToInt32(part.Trim())).Sum());
-    // int LatestIndex = Array.IndexOf(NormalizedVersions.ToArray(), NormalizedVersions.Max());
-    // string LatestVersion = ParsedVersions.ElementAt(LatestIndex);
+    UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 96);
+    Console.WriteLine("Updated: " + UpdateResult.Updated);
+    Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
-    // foreach(var Current in Elements)
-    // {
-    //     Console.WriteLine(Current);
-    // }
+    // Console.WriteLine("-------FIREFOX / WINDOWS-------");
+    // UpdateResult = DriverManager.Update(Browser.FIREFOX, Platform.WINDOWS, Architecture.x86, 0);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
-    // Console.WriteLine("--------------");
-    // Console.WriteLine(LatestVersion);
+    // Console.WriteLine("-------EDGE / WINDOWS-------");
+    // UpdateResult = DriverManager.Update(Browser.EDGE, Platform.WINDOWS, Architecture.x86, 94);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
-    // JsonElement Element = JsonSerializer.Deserialize<JsonElement>(Contents);
-    // string Output = JsonSerializer.Serialize(Element, new JsonSerializerOptions()
-    // {
-    //     Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    //     WriteIndented = true
-    // });
+    // Console.WriteLine("-------CHROME / LINUX-------");
+    // UpdateResult = DriverManager.Update(Browser.CHROME, Platform.LINUX, Architecture.x64, 0);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
-    // WriteLine(Contents);
+    // Console.WriteLine("-------FIREFOX / LINUX-------");
+    // UpdateResult = DriverManager.Update(Browser.FIREFOX, Platform.LINUX, Architecture.x86, 0);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
+
+    // Console.WriteLine("-------EDGE / LINUX-------");
+    // UpdateResult = DriverManager.Update(Browser.EDGE, Platform.LINUX, Architecture.x86, 94);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
+
+    // DriverManager.Start(Browser.EDGE);
+    // Console.WriteLine(DriverManager.IsRunning(Browser.EDGE));
 }
-catch(Exception error)
+catch(Exception)
 {
-    throw new Exception("Bad :(", error);
+    throw;
 }
 finally
 {
-    Response?.Dispose();
-    Reader?.Dispose();
+    Console.WriteLine("All done");
+    DriverManager?.Dispose();
 }
