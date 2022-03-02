@@ -2,15 +2,15 @@
 
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <AssemblyName>CSSelenium</AssemblyName>
-    <VersionPrefix>1.1.0</VersionPrefix>
+    <VersionPrefix>2.0.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Authors>Thomas Frengler</Authors>
     <Copyright>Thomas Frengler @ 2022</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <AssemblyTitle>C# Selenium</AssemblyTitle>
-    <Description>Simple C# Selenium wrapper, for getting up and running with a minimum of fuss</Description>
+    <Description>Simple C# Selenium bootstrapper, for getting up and running with a minimum of fuss</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -27,8 +27,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
-    <PackageReference Include="Selenium.Support" Version="3.141.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.1.0" />
+    <PackageReference Include="Selenium.Support" Version="4.1.0" />
+    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
+    <PackageReference Include="SharpCompress" Version="0.30.1" />
+    <!-- <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" /> -->
   </ItemGroup>
 </Project>

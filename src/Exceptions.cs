@@ -1,6 +1,6 @@
 using System;
 
-namespace TFrengler.Selenium
+namespace TFrengler.CSSelenium
 {
     public class UnsupportedOSException : Exception
     {
@@ -49,6 +49,14 @@ namespace TFrengler.Selenium
 
         public UnsupportedWebdriverConfigurationException(string message, Exception inner)
             : base(message, inner)
+        {
+        }
+    }
+
+    public class UnavailableVersionException : Exception
+    {
+        public UnavailableVersionException(Browser browser, uint version)
+        : base($"No such version available for the {Enum.GetName(typeof(Browser), browser)}-driver: {version}")
         {
         }
     }
