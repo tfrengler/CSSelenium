@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Net;
 using System.Net.Http;
-using System.IO.Compression;
 using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
@@ -34,7 +33,7 @@ namespace TFrengler.CSSelenium
 
         /// <summary>True if the driver was updated, false if not</summary>
         public bool Updated { get; }
-        /// <summary>The version of the driver binary before it was updated. Is "0" if the driver binary didn't exist</summary>
+        /// <summary>The version of the driver binary before it was updated. Is "0" if the driver binary or version file didn't exist</summary>
         public string OldVersion { get; }
         /// <summary>The version of the driver binary after it was updated. Is empty if Updated is false</summary>
         public string NewVersion { get; }
@@ -55,7 +54,7 @@ namespace TFrengler.CSSelenium
         public string Readable { get; }
     }
 
-    /// <summary>Utility class for managing the driver lifetimes and also facilitatates auto-updating the various driver binaries to the latest or a specific version</summary>
+    /// <summary>Utility class for managing the driver lifetimes and also facilitates auto-updating the various driver binaries to the latest or a specific version</summary>
     public sealed class DriverManager : IDisposable
     {
         private sealed class HttpResponse
@@ -93,7 +92,8 @@ namespace TFrengler.CSSelenium
         private string GetArchitectureName(Architecture architecture) => Enum.GetName(typeof(Architecture), architecture);
         private uint NormalizeVersion(string version) => (uint)CleanVersionString(version).Split('.', StringSplitOptions.RemoveEmptyEntries).Select(part => Convert.ToInt32(part.Trim())).Sum();
 
-        /// <param name="fileLocation">The folder where the webdriver executables are. Note that the original file names of the webdrivers are expected! (chromedriver, geckodriver etc). If you plan on using the auto-update functionality this folder has to be writeable as well!</param>
+        /// <param name="fileLocation">The folder where the driver executables are located. Note that the original file names of the webdrivers are expected! (chromedriver, geckodriver etc). If you plan on using the auto-update functionality this folder has to be writeable</param>
+        /// <exception cref="DirectoryNotFoundException" />
         public DriverManager(DirectoryInfo fileLocation)
         {
             DriverNames = new string[3] { "msedgedriver", "geckodriver", "chromedriver" };
@@ -115,12 +115,17 @@ namespace TFrengler.CSSelenium
         }
 
         /// <summary>
-        /// Starts the given webdriver for the given browser, and return the URI that it's running on
+        /// Starts the driver for the given browser, and return the URI that it's running on
         /// </summary>
         /// <param name="browser">The browser whose driver you wish to start</param>
-        /// <param name="killExisting">If passed as true it will kill the already running instance. Otherwise it will throw an exception. Optional, defaults to false</param>
-        /// <param name="port">The port you wish to start the webdriver on. Optional, defaults to a random, free port on the system</param>
-        /// <returns>The URI that the webdriver is running on</returns>
+        /// <param name="killExisting">If passed as true it will kill an already running instance. Otherwise it will throw an exception. Optional, defaults to false</param>
+        /// <param name="port">The port you wish to start the driver on. Optional, defaults to a random free port on the system</param>
+        /// <returns>The URI that the driver is running on</returns>
+        /// <exception cref="UnsupportedOSException" />
+        /// <exception cref="WebdriverAlreadyRunningException" />
+        /// <exception cref="FileNotFoundException" />
+        /// <exception cref="SecurityException" />
+        /// <exception cref="NotImplementedException" />
         public Uri Start(Browser browser, bool killExisting = false, uint port = 0)
         {
             bool RunningOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -170,9 +175,10 @@ namespace TFrengler.CSSelenium
                     _ => throw new NotImplementedException("Fatal error - BROWSER enum not an expected value: " + browser)
                 };
 
-                if (port > 0) Service.Port = (int)port;
-                Service.Start();
+                if (port > 0)
+                    Service.Port = (int)port;
 
+                Service.Start();
                 DriverServices[(int)browser] = Service;
             }
 
@@ -180,7 +186,7 @@ namespace TFrengler.CSSelenium
         }
 
         /// <summary>
-        /// Check whether the webdriver for the given browser is running, and able to receive commands
+        /// Check whether the driver for the given browser is running, and able to receive commands
         /// </summary>
         /// <param name="browser">The browser whose status you want to check</param>
         /// <returns>A boolean to indicate whether the driver is running</returns>
@@ -195,9 +201,9 @@ namespace TFrengler.CSSelenium
         }
 
         /// <summary>
-        /// Shuts down the given webdriver. If any browser instances are open, those will be killed as well.
+        /// Shuts down the given driver. If any browser instances are open, those will be killed as well.
         /// </summary>
-        /// <param name="browser">The browser whose webdriver you want to stop</param>
+        /// <param name="browser">The browser whose driver you want to stop</param>
         /// <returns>A boolean to indicate whether the driver was stopped or not. If the driver isn't running it is therefore safe to call stop without worrying about exceptions</returns>
         public bool Stop(Browser browser)
         {
@@ -219,6 +225,7 @@ namespace TFrengler.CSSelenium
         public void Reset()
         {
             FileLocation.Refresh();
+            TempFolder.Refresh();
 
             foreach(FileInfo CurrentFile in FileLocation.EnumerateFiles())
             {
@@ -228,19 +235,16 @@ namespace TFrengler.CSSelenium
             if (TempFolder.Exists)
             {
                 TempFolder.Delete(true);
-                TempFolder.Refresh();
             }
-
-            TempFolder.Create();
         }
 
         /// <summary>Deletes the temp-folder</summary>
         public void ResetTemp()
         {
+            TempFolder.Refresh();
             if (TempFolder.Exists)
             {
                 TempFolder.Delete(true);
-                TempFolder.Refresh();
             }
         }
 
@@ -258,19 +262,30 @@ namespace TFrengler.CSSelenium
         #region WEBDRIVER DOWNLOAD
 
         /// <summary>
-        /// Attempts to update the webdriver for the given browser to a desired version or latest available version. If the current version matches the desired version for the given configuration then it does nothing.
-        /// <para>Note that not all platform and architecture combinations are supported:</para>
-        /// <para>- EDGE is not available on LINUX</para>
-        /// <para>- CHROME on LINUX only has an x64 version available</para>
-        /// <para>- CHROME on WINDOWS only has an x86 version available</para>
+        /// Attempts to update the driver of the given browser to a desired version or latest available version. If the current version matches the desired version for the given configuration then it does nothing.<br/>
+        /// Note that you cannot have multiple binaries per architecture! The driver names do not differ per architecture (they do per platform) and Selenium's driverservice expects the original filenames.
+        /// So if you update a driver to a different architecture it will overwrite the existing driver. There's also no way to query which architecture your current driver is so that responsibility lies with you.
+        /// <para>Also note that not all platform and architecture combinations are supported:<br/>
+        /// - EDGE is not available on LINUX<br/>
+        /// - CHROME on LINUX only has an x64 version available<br/>
+        /// - CHROME on WINDOWS only has an x86 version available<br/>
+        /// </para>
         /// </summary>
         /// <param name="version">The version of the driver to download. This is the major revision only! The latest version for a given major revision is always chosen</param>
-        /// <param name="browser">The browser whose webdriver you want to update</param>
+        /// <param name="browser">The browser whose driver you want to update</param>
         /// <param name="platform">The desired platform for the driver. Note that not all platform and architecture combinations are supported!</param>
         /// <param name="architecture">The desired architecture of the driver. Note that not all platform and architecture combinations are supported!</param>
-        /// <returns>A structure indicating whether the driver was updated, what the old and new version is and/or whether an error was encountered</returns>
+        /// <returns>A structure indicating whether the driver was updated and what the old and new version is</returns>
+        /// <exception cref="UnsupportedWebdriverConfigurationException" />
+        /// <exception cref="NotImplementedException" />
+        /// <exception cref="SecurityException" />
         public UpdateResponse Update(Browser browser, Platform platform, Architecture architecture, uint version = 0)
         {
+            if ((FileLocation.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+            {
+                throw new SecurityException($"Unable to update driver as the driver-folder is read-only ({FileLocation.FullName})");
+            }
+
             if (browser == Browser.EDGE && platform == Platform.LINUX)
             {
                 throw new UnsupportedWebdriverConfigurationException("Edge is not available on Linux");
@@ -286,7 +301,7 @@ namespace TFrengler.CSSelenium
                 throw new UnsupportedWebdriverConfigurationException("Chrome on Windows only has x86 driver available");
             }
 
-            string CurrentVersion = GetCurrentVersion(browser, platform);
+            var CurrentVersion = GetCurrentVersion(browser, platform);
             VersionInfo DesiredVersionInfo;
 
             if (version == 0)
@@ -304,11 +319,12 @@ namespace TFrengler.CSSelenium
                 };
             }
 
-            if (DesiredVersionInfo.Normalized == NormalizeVersion(CurrentVersion))
+            if (DesiredVersionInfo.Normalized == CurrentVersion.Normalized)
             {
-                return new UpdateResponse(false, CurrentVersion, DesiredVersionInfo.Readable);
+                return new UpdateResponse(false, CurrentVersion.Readable, DesiredVersionInfo.Readable);
             };
 
+            TempFolder.Refresh();
             if (!TempFolder.Exists)
             {
                 TempFolder.Create();
@@ -317,12 +333,12 @@ namespace TFrengler.CSSelenium
             Uri DesiredVersionURL = ResolveDownloadURL(DesiredVersionInfo.Readable, browser, platform, architecture);
             DownloadAndExtract(DesiredVersionURL, browser, platform, architecture, DesiredVersionInfo.Readable);
 
-            return new UpdateResponse(true, CurrentVersion, DesiredVersionInfo.Readable);
+            return new UpdateResponse(true, CurrentVersion.Readable, DesiredVersionInfo.Readable);
         }
 
-        /// <summary>Retrieves the current version of the driver for a given browser, platform and architecture</summary>
-        /// <returns>The current version if both the webdriver and the version file exists, otherwise "0"</returns>
-        public string GetCurrentVersion(Browser browser, Platform platform)
+        /// <summary>Retrieves the current version of the driver for a given browser and platform</summary>
+        /// <returns>An instance of <see cref="VersionInfo"/> with the current driver's version. If the driver binary or the version file does not exist, the version values are 0</returns>
+        public VersionInfo GetCurrentVersion(Browser browser, Platform platform)
         {
             var VersionFile = new FileInfo(Path.Combine(FileLocation.FullName, GetVersionFileName(browser, platform)));
 
@@ -335,17 +351,15 @@ namespace TFrengler.CSSelenium
                 using (FileStream File = new FileStream(VersionFile.FullName, FileMode.Open, FileAccess.Read))
                 using (StreamReader Reader = new StreamReader(File))
                 {
-                    return Reader.ReadToEnd();
+                    var Version = Reader.ReadToEnd();
+                    return new VersionInfo( NormalizeVersion(Version), Version );
                 }
             }
 
-            return "0";
+            return new VersionInfo( 0, "0" );
         }
 
-        /// <summary>
-        /// Attempts to determines and retrieve the latest available version of the webdriver for the given browser
-        /// </summary>
-        /// <returns>A string representing the latest available version of the webdriver for a given browser</returns>
+        /// <summary>Determines the latest available version of the driver for the given browser</summary>
         public VersionInfo DetermineLatestVersion(Browser browser)
         {
             var URL = new Uri(BrowserLatestVersionURLs[browser]);
@@ -375,9 +389,11 @@ namespace TFrengler.CSSelenium
             return new VersionInfo(NormalizeVersion(VersionString), VersionString);
         }
 
-        #region PRIVATE
-
-        private VersionInfo DetermineAvailableVersionEdge(uint version)
+        /// <summary>Attempts to determines the latest available driver for the given major revision of the EDGE-driver</summary>
+        /// <param name="version">The major revision of the driver you want to find the latest version of</param>
+        /// <exception cref="UnavailableVersionException"/>
+        /// <exception cref="HttpRequestException"/>
+        public VersionInfo DetermineAvailableVersionEdge(uint version)
         {
             var URL = new Uri(EDGE_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
@@ -409,7 +425,11 @@ namespace TFrengler.CSSelenium
             return new VersionInfo(LatestVersionNormalized, LatestVersionString);
         }
 
-        private VersionInfo DetermineAvailableVersionChrome(uint version)
+        /// <summary>Attempts to determines the latest available driver for the given major revision of the CHROME-driver</summary>
+        /// <param name="version">The major revision of the driver you want to find the latest version of</param>
+        /// <exception cref="UnavailableVersionException"/>
+        /// <exception cref="HttpRequestException"/>
+        public VersionInfo DetermineAvailableVersionChrome(uint version)
         {
             var URL = new Uri(CHROME_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
@@ -428,7 +448,13 @@ namespace TFrengler.CSSelenium
             return new VersionInfo( NormalizeVersion(StringContent), StringContent );
         }
 
-        private VersionInfo DetermineAvailableVersionFirefox(uint version)
+        /// <summary>Attempts to determines the latest available driver for the given major revision of the FIREFOX-driver</summary>
+        /// <param name="version">The major revision of the driver you want to find the latest version of<br/>
+        /// Note that for Firefox the major revision number is the second number in the version string. So "v0.30.0" is version 30
+        /// </param>
+        /// <exception cref="UnavailableVersionException"/>
+        /// <exception cref="HttpRequestException"/>
+        public VersionInfo DetermineAvailableVersionFirefox(uint version)
         {
             var URL = new Uri(FIREFOX_VERSION_URL + version);
             HttpResponse Response = MakeRequest(URL);
@@ -464,6 +490,8 @@ namespace TFrengler.CSSelenium
 
             return new VersionInfo(LatestVersionNormalized, LatestVersionString);
         }
+
+        #region PRIVATE
 
         private Uri ResolveDownloadURL(string version, Browser browser, Platform platform, Architecture architecture)
         {

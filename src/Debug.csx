@@ -21,20 +21,23 @@ DriverManager DriverManager;
 
 try {
     DriverManager = new DriverManager( new DirectoryInfo("C:/Temp/DownloadedWebdrivers/") );
-    DriverManager.Reset();
+    // DriverManager.Reset();
 
     UpdateResponse UpdateResult;
 
-    Console.WriteLine("-------CHROME / WINDOWS-------");
-    UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 0);
-    Console.WriteLine("Updated: " + UpdateResult.Updated);
-    Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
-    Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
+    DriverManager.Start(Browser.EDGE);
+    Console.WriteLine(DriverManager.IsRunning(Browser.EDGE));
 
-    UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 96);
-    Console.WriteLine("Updated: " + UpdateResult.Updated);
-    Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
-    Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
+    // Console.WriteLine("-------CHROME / WINDOWS-------");
+    // UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 0);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
+
+    // UpdateResult = DriverManager.Update(Browser.CHROME, Platform.WINDOWS, Architecture.x86, 96);
+    // Console.WriteLine("Updated: " + UpdateResult.Updated);
+    // Console.WriteLine("OldVersion: " + UpdateResult.OldVersion);
+    // Console.WriteLine("NewVersion: " + UpdateResult.NewVersion);
 
     // Console.WriteLine("-------FIREFOX / WINDOWS-------");
     // UpdateResult = DriverManager.Update(Browser.FIREFOX, Platform.WINDOWS, Architecture.x86, 0);

@@ -20,23 +20,26 @@ HttpClient HttpClient;
 
 try {
 
-    HttpClient = new HttpClient();
+    var Test = Process.GetProcessesByName("msedgedriver");
+    Console.WriteLine(Test.Length);
 
-    var Request = new HttpRequestMessage()
-    {
-        RequestUri = new Uri("https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver/LATEST_STABLE"),
-        Method = HttpMethod.Get
-    };
-    var Response = HttpClient.Send(Request);
+    // HttpClient = new HttpClient();
 
-    var Stream = Response.Content.ReadAsStream();
-    var Buffer = new MemoryStream();
-    using (var StreamReader = new StreamReader(Stream))
-    {
-        Stream.CopyTo(Buffer);
-    }
+    // var Request = new HttpRequestMessage()
+    // {
+    //     RequestUri = new Uri("https://msedgewebdriverstorage.blob.core.windows.net/edgewebdriver/LATEST_STABLE"),
+    //     Method = HttpMethod.Get
+    // };
+    // var Response = HttpClient.Send(Request);
 
-    Console.WriteLine( Encoding.Unicode.GetString(Buffer.ToArray()) );
+    // var Stream = Response.Content.ReadAsStream();
+    // var Buffer = new MemoryStream();
+    // using (var StreamReader = new StreamReader(Stream))
+    // {
+    //     Stream.CopyTo(Buffer);
+    // }
+
+    // Console.WriteLine( Encoding.Unicode.GetString(Buffer.ToArray()) );
 }
 catch(Exception)
 {

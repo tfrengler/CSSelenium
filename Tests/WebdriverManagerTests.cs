@@ -10,7 +10,7 @@ using System.Linq;
 namespace Tests
 {
     [TestFixture]
-    public class WebdriverManagerTests
+    public class DriverManagerTests
     {
         public DriverManager WebdriverManager;
         public DirectoryInfo TempStaticBrowserDriverFolder;
@@ -70,11 +70,16 @@ namespace Tests
 
         public DriverProcessInfo GetWebdriverProcessInfo(string name)
         {
+            System.Threading.Thread.Sleep(1000);
             var RunningDriverProcesses = Process.GetProcessesByName(name);
 
             if (RunningDriverProcesses.Length == 0)
             {
-                return default;
+                return new DriverProcessInfo()
+                {
+                    Id = new int[0],
+                    Instances = 0
+                };
             }
 
             return new DriverProcessInfo()
@@ -116,7 +121,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
+        [TestCase(Category="StaticDrivers")]
         public void Start_Edge_Standard()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -160,7 +165,7 @@ namespace Tests
 
             Assert.Throws<WebdriverAlreadyRunningException>(()=> WebdriverManager.Start(Browser.CHROME, false, 0));
 
-            Assert.IsNull(GetWebdriverProcessInfo("chromedriver"));
+            Assert.AreEqual(0, GetWebdriverProcessInfo("chromedriver").Instances);
             WebdriverManager.Dispose();
         }
 
@@ -227,7 +232,7 @@ namespace Tests
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
+        [TestCase(Category="StaticDrivers")]
         public void Edge_IsRunning()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -239,7 +244,7 @@ namespace Tests
             WebdriverManager.Start(Browser.EDGE);
             Assert.IsTrue(WebdriverManager.IsRunning(Browser.EDGE));
 
-            var DriverProcesses = GetWebdriverProcessInfo("chromedriver");
+            var DriverProcesses = GetWebdriverProcessInfo("msedgedriver");
             Assert.IsTrue( DriverProcesses.Instances == 1 );
 
             WebdriverManager.Dispose();
@@ -259,7 +264,7 @@ namespace Tests
             Assert.IsTrue(WebdriverManager.Stop(Browser.CHROME));
 
             var DriverProcesses = GetWebdriverProcessInfo("chromedriver");
-            Assert.IsNull( DriverProcesses );
+            Assert.AreEqual(0, DriverProcesses.Instances );
 
             WebdriverManager.Dispose();
         }
@@ -274,12 +279,12 @@ namespace Tests
             Assert.IsTrue(WebdriverManager.Stop(Browser.FIREFOX));
 
             var DriverProcesses = GetWebdriverProcessInfo("geckodriver");
-            Assert.IsNull( DriverProcesses );
+            Assert.AreEqual(0, DriverProcesses.Instances );
 
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="StaticDrivers", IgnoreReason = "Not possible")]
+        [TestCase(Category="StaticDrivers")]
         public void Edge_Stop()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -292,7 +297,7 @@ namespace Tests
             Assert.IsTrue(WebdriverManager.Stop(Browser.EDGE));
 
             var DriverProcesses = GetWebdriverProcessInfo("msedgedriver");
-            Assert.IsTrue( DriverProcesses.Instances == 0 );
+            Assert.AreEqual(0, DriverProcesses.Instances );
 
             WebdriverManager.Dispose();
         }
@@ -301,27 +306,61 @@ namespace Tests
 
         #region TESTS: DetermineLatestAvailableVersion
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="DetermineLatestVersion")]
         public void Chrome_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
-            Assert.IsNotEmpty(WebdriverManager.DetermineLatestAvailableVersion(Browser.CHROME));
+            var VersionInfo = WebdriverManager.DetermineLatestVersion(Browser.CHROME);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="DetermineLatestVersion")]
         public void Firefox_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
-            Assert.IsNotEmpty(WebdriverManager.DetermineLatestAvailableVersion(Browser.FIREFOX));
+            var VersionInfo = WebdriverManager.DetermineLatestVersion(Browser.FIREFOX);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="DetermineLatestVersion")]
         public void Edge_DetermineLatestAvailableVersion()
         {
             var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
-            Assert.IsNotEmpty(WebdriverManager.DetermineLatestAvailableVersion(Browser.EDGE));
+            var VersionInfo = WebdriverManager.DetermineLatestVersion(Browser.EDGE);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
+            WebdriverManager.Dispose();
+        }
+
+        #endregion
+
+        #region TESTS: Specific versions
+
+        [TestCase(Category="DetermineSpecificVersions")]
+        public void Chrome_SpecificVersion()
+        {
+            var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
+            var VersionInfo = WebdriverManager.DetermineAvailableVersionChrome(96);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
+            WebdriverManager.Dispose();
+        }
+
+        [TestCase(Category="DetermineSpecificVersions")]
+        public void Firefox_SpecificVersion()
+        {
+            var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
+            var VersionInfo = WebdriverManager.DetermineAvailableVersionFirefox(29);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
+            WebdriverManager.Dispose();
+        }
+
+        [TestCase(Category="DetermineSpecificVersions")]
+        public void Edge_SpecificVersion()
+        {
+            var WebdriverManager = new DriverManager(TempStaticBrowserDriverFolder);
+            var VersionInfo = WebdriverManager.DetermineAvailableVersionEdge(96);
+            Assert.IsTrue(VersionInfo.Normalized > 0 && !string.IsNullOrEmpty(VersionInfo.Readable));
             WebdriverManager.Dispose();
         }
 
@@ -338,45 +377,51 @@ namespace Tests
                 Browser.EDGE => "msedgedriver"
             };
 
-            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}_WINDOWS_version.txt", "DUMMY");
-            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}_LINUX_version.txt", "DUMMY");
+            string VersionName = Enum.GetName(typeof(Browser), browser);
+
+            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{VersionName}_WINDOWS", "v1.2.3");
+            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{VersionName}_LINUX", "v1.2.3");
             File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}.exe", "DUMMY");
             File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}", "DUMMY");
 
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
-            string WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
-            string LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
+            var WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
 
-            Assert.IsNotEmpty(WindowsVersion);
-            Assert.IsNotEmpty(LinuxVersion);
+            Console.WriteLine("WINDOWS Normalized: " + WindowsVersion.Normalized);
+            Console.WriteLine("WINDOWS Readable: " + WindowsVersion.Readable);
 
-            Assert.AreNotEqual(WindowsVersion, "0");
-            Assert.AreNotEqual(LinuxVersion, "0");
+            Assert.AreNotEqual(0, WindowsVersion.Normalized);
+            Assert.AreNotEqual("0", WindowsVersion.Readable);
+
+            if (browser != Browser.EDGE)
+            {
+                var LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
+
+                Console.WriteLine("LINUX Normalized: " + WindowsVersion.Normalized);
+                Console.WriteLine("LINUX Readable: " + WindowsVersion.Readable);
+
+                Assert.AreNotEqual(0, LinuxVersion.Normalized);
+                Assert.AreNotEqual("0", LinuxVersion.Readable);
+            }
 
             WebdriverManager.Dispose();
         }
 
         private void CurrentVersionTest_NOK_Missing_Driver(Browser browser)
         {
-            string DriverName = browser switch
-            {
-                Browser.CHROME => "chromedriver",
-                Browser.FIREFOX => "geckodriver",
-                Browser.EDGE => "msedgedriver"
-            };
+            string VersionName = Enum.GetName(typeof(Browser), browser);
 
-            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}_WINDOWS_version.txt", "DUMMY");
-            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}_LINUX_version.txt", "DUMMY");
+            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{VersionName}_WINDOWS", "0");
+            File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{VersionName}_LINUX", "0");
 
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
-            string WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
-            string LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
+            var WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
+            var LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
 
-            Assert.IsNotEmpty(WindowsVersion);
-            Assert.IsNotEmpty(LinuxVersion);
-
-            Assert.AreEqual(WindowsVersion, "0");
-            Assert.AreEqual(LinuxVersion, "0");
+            Assert.AreEqual(0, WindowsVersion.Normalized);
+            Assert.AreEqual(0, LinuxVersion.Normalized);
+            Assert.AreEqual("0", WindowsVersion.Readable);
+            Assert.AreEqual("0", LinuxVersion.Readable);
 
             WebdriverManager.Dispose();
         }
@@ -394,67 +439,66 @@ namespace Tests
             File.WriteAllText(TempBrowserDriverDownloadFolder.FullName + $"/{DriverName}", "DUMMY");
 
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
-            string WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
-            string LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
+            var WindowsVersion = WebdriverManager.GetCurrentVersion(browser, Platform.WINDOWS);
+            var LinuxVersion = WebdriverManager.GetCurrentVersion(browser, Platform.LINUX);
 
-            Assert.IsNotEmpty(WindowsVersion);
-            Assert.IsNotEmpty(LinuxVersion);
-
-            Assert.AreEqual(WindowsVersion, "0");
-            Assert.AreEqual(LinuxVersion, "0");
+            Assert.AreEqual(0, WindowsVersion.Normalized);
+            Assert.AreEqual(0, LinuxVersion.Normalized);
+            Assert.AreEqual("0", WindowsVersion.Readable);
+            Assert.AreEqual("0", LinuxVersion.Readable);
 
             WebdriverManager.Dispose();
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Chrome_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.CHROME);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Firefox_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.FIREFOX);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Edge_GetCurrentVersion()
         {
             CurrentVersionTest_OK(Browser.EDGE);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Chrome_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.CHROME);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Firefox_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.FIREFOX);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Edge_GetCurrentVersion_Missing_Driver()
         {
             CurrentVersionTest_NOK_Missing_Driver(Browser.EDGE);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Chrome_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.CHROME);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Firefox_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.FIREFOX);
         }
 
-        [TestCase(Category="DownloadDrivers")]
+        [TestCase(Category="GetCurrentVersion")]
         public void Edge_GetCurrentVersion_Missing_VersionFile()
         {
             CurrentVersionTest_NOK_Missing_VersionFile(Browser.EDGE);
@@ -462,20 +506,23 @@ namespace Tests
 
         #endregion
 
-        #region TESTS: GetLatestWebdriverBinary
+        #region TESTS: Update
 
         [TestCase(Category="DownloadDrivers")]
         public void Chrome_GetLatestWebdriverBinary_OK_Windows()
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
-
-            WebdriverManager.GetLatestWebdriverBinary(Browser.CHROME, Platform.WINDOWS, TFrengler.Selenium.Architecture.x86);
+            var UpdateResult = WebdriverManager.Update(Browser.CHROME, Platform.WINDOWS, TFrengler.CSSelenium.Architecture.x86);
 
             var WebdriverFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/chromedriver.exe" );
-            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/chromedriver_WINDOWS_version.txt" );
+            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/CHROME_WINDOWS" );
 
             Assert.IsTrue( WebdriverFile.Exists );
             Assert.IsTrue( VersionFile.Exists );
+
+            Assert.IsTrue(UpdateResult.Updated);
+            Assert.AreEqual("0", UpdateResult.OldVersion);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(UpdateResult.NewVersion) && UpdateResult.NewVersion != "0");
         }
 
         [TestCase(Category="DownloadDrivers")]
@@ -483,27 +530,34 @@ namespace Tests
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
 
-            WebdriverManager.GetLatestWebdriverBinary(Browser.CHROME, Platform.LINUX, TFrengler.Selenium.Architecture.x64);
+            var UpdateResult = WebdriverManager.Update(Browser.CHROME, Platform.LINUX, TFrengler.CSSelenium.Architecture.x64);
 
             var WebdriverFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/chromedriver" );
-            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/chromedriver_LINUX_version.txt" );
+            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/CHROME_LINUX" );
 
             Assert.IsTrue( WebdriverFile.Exists );
             Assert.IsTrue( VersionFile.Exists );
+
+            Assert.IsTrue(UpdateResult.Updated);
+            Assert.AreEqual("0", UpdateResult.OldVersion);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(UpdateResult.NewVersion) && UpdateResult.NewVersion != "0");
         }
 
         [TestCase(Category="DownloadDrivers")]
         public void Firefox_GetLatestWebdriverBinary_OK_Windows()
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
-
-            WebdriverManager.GetLatestWebdriverBinary(Browser.FIREFOX, Platform.WINDOWS, TFrengler.Selenium.Architecture.x64);
+            var UpdateResult = WebdriverManager.Update(Browser.FIREFOX, Platform.WINDOWS, TFrengler.CSSelenium.Architecture.x64);
 
             var WebdriverFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/geckodriver.exe" );
-            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/geckodriver_WINDOWS_version.txt" );
+            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/FIREFOX_WINDOWS" );
 
             Assert.IsTrue( WebdriverFile.Exists );
             Assert.IsTrue( VersionFile.Exists );
+
+            Assert.IsTrue(UpdateResult.Updated);
+            Assert.AreEqual("0", UpdateResult.OldVersion);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(UpdateResult.NewVersion) && UpdateResult.NewVersion != "0");
         }
 
         [TestCase(Category="DownloadDrivers")]
@@ -511,13 +565,17 @@ namespace Tests
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
 
-            WebdriverManager.GetLatestWebdriverBinary(Browser.FIREFOX, Platform.LINUX, TFrengler.Selenium.Architecture.x64);
+            var UpdateResult = WebdriverManager.Update(Browser.FIREFOX, Platform.LINUX, TFrengler.CSSelenium.Architecture.x64);
 
             var WebdriverFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/geckodriver" );
-            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/geckodriver_LINUX_version.txt" );
+            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/FIREFOX_LINUX" );
 
             Assert.IsTrue( WebdriverFile.Exists );
             Assert.IsTrue( VersionFile.Exists );
+
+            Assert.IsTrue(UpdateResult.Updated);
+            Assert.AreEqual("0", UpdateResult.OldVersion);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(UpdateResult.NewVersion) && UpdateResult.NewVersion != "0");
         }
 
         [TestCase(Category="DownloadDrivers")]
@@ -525,13 +583,17 @@ namespace Tests
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
 
-            WebdriverManager.GetLatestWebdriverBinary(Browser.EDGE, Platform.WINDOWS, TFrengler.Selenium.Architecture.x64);
+            var UpdateResult = WebdriverManager.Update(Browser.EDGE, Platform.WINDOWS, TFrengler.CSSelenium.Architecture.x64);
 
             var WebdriverFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/msedgedriver.exe" );
-            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/msedgedriver_WINDOWS_version.txt" );
+            var VersionFile = new FileInfo( TempBrowserDriverDownloadFolder.FullName + "/EDGE_WINDOWS" );
 
             Assert.IsTrue( WebdriverFile.Exists );
             Assert.IsTrue( VersionFile.Exists );
+
+            Assert.IsTrue(UpdateResult.Updated);
+            Assert.AreEqual("0", UpdateResult.OldVersion);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(UpdateResult.NewVersion) && UpdateResult.NewVersion != "0");
         }
 
         [TestCase(Category="DownloadDrivers")]
@@ -541,7 +603,7 @@ namespace Tests
 
             Assert.Throws<UnsupportedWebdriverConfigurationException>(() =>
             {
-                WebdriverManager.GetLatestWebdriverBinary(Browser.EDGE, Platform.LINUX, TFrengler.Selenium.Architecture.x64);
+                WebdriverManager.Update(Browser.EDGE, Platform.LINUX, TFrengler.CSSelenium.Architecture.x64);
             });
         }
 
@@ -552,24 +614,31 @@ namespace Tests
 
             Assert.Throws<UnsupportedWebdriverConfigurationException>(() =>
             {
-                WebdriverManager.GetLatestWebdriverBinary(Browser.CHROME, Platform.WINDOWS, TFrengler.Selenium.Architecture.x64);
+                WebdriverManager.Update(Browser.CHROME, Platform.WINDOWS, TFrengler.CSSelenium.Architecture.x64);
             });
 
             Assert.Throws<UnsupportedWebdriverConfigurationException>(() =>
             {
-                WebdriverManager.GetLatestWebdriverBinary(Browser.CHROME, Platform.LINUX, TFrengler.Selenium.Architecture.x86);
+                WebdriverManager.Update(Browser.CHROME, Platform.LINUX, TFrengler.CSSelenium.Architecture.x86);
             });
         }
 
-        [TestCase(Category="DownloadDrivers")]
-        public void IE11_GetLatestWebdriverBinary_NOK()
+        #endregion
+
+        #region Reset and Clear
+
+        [TestCase(Category="ResetAndClear")]
+        public void Reset()
         {
             var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
+            Assert.DoesNotThrow(()=> WebdriverManager.Reset());
+        }
 
-            Assert.Throws<UnsupportedWebdriverConfigurationException>(() =>
-            {
-                WebdriverManager.GetLatestWebdriverBinary(Browser.IE11, Platform.WINDOWS, TFrengler.Selenium.Architecture.x86);
-            });
+        [TestCase(Category="ResetAndClear")]
+        public void ClearTemp()
+        {
+            var WebdriverManager = new DriverManager(TempBrowserDriverDownloadFolder);
+            Assert.DoesNotThrow(()=> WebdriverManager.ResetTemp());
         }
 
         #endregion
