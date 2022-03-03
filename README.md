@@ -2,7 +2,8 @@
 
 A simple C# bootstrapper for Selenium, designed to get you quickly up and running, with a minimum of fuss.
 
-**NEW VERSION**
+**!!!NEW VERSION!!!**
+
 Version 2 has been released which is a major refactor of the code. The biggest change is that all the extra, bonus tools and utility functionality has been removed.
 It was simply too much to try and maintain and test. I also wanted this library to focus purely on what it was created for: as a bootstrapper for Selenium.
 
@@ -10,12 +11,15 @@ Another big change is that the driver manager can now update webdrivers to speci
 The supported Selenium version is now the new 4+ which means no more support for 3 and the NET framework used has been updated from NET Core 3.1 to NET 5.0.
 The SeleniumWrapper has disappeared and been replaced by the static class SeleniumFactory, which has the static method Create() to get a RemoteWebdriver-instance.
 
-This might be for you if:
+**Intro**
+
+This library might be for you if:
 1. You are a beginner, and/or aren't super technical, and just need to get Selenium up and running.
 1. You don't know (or care) much about how Selenium is started or how to get the webdrivers going.
 1. You don't want to do the boilerplate code yourself, and your plan for Selenium doesn't rely on highly specialized or advanced management of Selenium and the webdrivers.
 
 **So what does it do?**
+
 - Abstracts away getting an instance of RemoteWebDriver, which is the primary interface for interacting with the browser.
 - Abstracts away the finer details of starting and stopping the webdriver executables for a given browser. The webdriver manager uses the DriverService-classes under the hood.
 - Aside from hiding the finer details of the instantiation, you get direct access to Selenium's RemoteWebDriver. That's what the factory is for.
