@@ -39,7 +39,7 @@ namespace Tests
             if (!TempStaticBrowserDriverFolder.Exists)
                 throw new Exception($"Error setting up unit tests for {this.GetType().Name} | Temp static webdriver folder does not exist: {TempStaticBrowserDriverFolder.FullName}");
 
-            if (!TempStaticBrowserDriverFolder.Exists)
+            if (!TempBrowserDriverDownloadFolder.Exists)
                 throw new Exception($"Error setting up unit tests for {this.GetType().Name} | Temp downloaded webdriver folder does not exist: {TempStaticBrowserDriverFolder.FullName}");
         }
 
