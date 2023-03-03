@@ -40,7 +40,7 @@ namespace Tests
                 throw new Exception($"Error setting up unit tests for {this.GetType().Name} | Temp static webdriver folder does not exist: {TempStaticBrowserDriverFolder.FullName}");
 
             if (!TempBrowserDriverDownloadFolder.Exists)
-                throw new Exception($"Error setting up unit tests for {this.GetType().Name} | Temp downloaded webdriver folder does not exist: {TempStaticBrowserDriverFolder.FullName}");
+                throw new Exception($"Error setting up unit tests for {this.GetType().Name} | Temp downloaded webdriver folder does not exist: {TempBrowserDriverDownloadFolder.FullName}");
         }
 
         [OneTimeTearDown]
@@ -63,7 +63,7 @@ namespace Tests
         {
             TempBrowserDriverDownloadFolder.Refresh();
             FileInfo[] AllFiles = TempBrowserDriverDownloadFolder.GetFiles();
-
+            
             foreach(FileInfo CurrentFile in AllFiles)
                 CurrentFile.Delete();
         }

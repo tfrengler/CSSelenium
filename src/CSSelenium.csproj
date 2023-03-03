@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>CSSelenium</AssemblyName>
     <VersionPrefix>2.0.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
@@ -11,6 +11,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <AssemblyTitle>C# Selenium</AssemblyTitle>
     <Description>Simple C# Selenium bootstrapper, for getting up and running with a minimum of fuss</Description>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -27,10 +28,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Selenium.WebDriver" Version="4.1.0" />
-    <PackageReference Include="Selenium.Support" Version="4.1.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.8.1" />
+    <PackageReference Include="Selenium.Support" Version="4.8.1" />
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
-    <PackageReference Include="SharpCompress" Version="0.30.1" />
+    <PackageReference Include="SharpCompress" Version="0.32.2" />
     <!-- <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" /> -->
   </ItemGroup>
 </Project>
